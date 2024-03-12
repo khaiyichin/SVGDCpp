@@ -7,6 +7,8 @@
 class MultivariateNormal : public Distribution
 {
 public:
+    MultivariateNormal() {}
+
     MultivariateNormal(const Eigen::VectorXd &mean, const Eigen::MatrixXd &covariance) : Distribution(mean.rows())
     {
         // Ensure that the dimensions of mean matches covariance
@@ -22,14 +24,26 @@ public:
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormConst();
+    }
 
-        // Initialize AD function
-        KernelFun::Initialize();
+    MultivariateNormal(const MultivariateNormal &obj)
+    {
+        *this = obj;
     }
 
     ~MultivariateNormal(){};
 
-protected:
+    MultivariateNormal &operator=(const MultivariateNormal &obj)
+    {
+        dimension_ = obj.dimension_;
+        mean_vec_ad_ = obj.mean_vec_ad_;
+        cov_mat_ad_ = obj.cov_mat_ad_;
+
+        Distribution::operator=(obj);
+
+        return *this;
+    }
+
     void UpdateParameters(const std::vector<Eigen::MatrixXd> &params) override
     {
         Eigen::VectorXd mean = params[0];
@@ -49,6 +63,9 @@ protected:
         ComputeNormConst();
     }
 
+    void Step() override {}
+
+protected:
     VectorXADd Kernel(const VectorXADd &x) override
     {
         VectorXADd diff = x - mean_vec_ad_;
@@ -58,7 +75,7 @@ protected:
     void ComputeNormConst() override
     {
         norm_const_ = 1.0 /
-                      (std::pow(2.0 * M_PI, dimension_ / 2.0) * CppAD::Value(CppAD::sqrt(cov_mat_ad_.determinant())));
+                      (std::pow(2.0 * M_PI, dimension_ / 2.0) * std::sqrt(CppAD::Value(cov_mat_ad_.determinant())));
     }
 
     VectorXADd mean_vec_ad_;

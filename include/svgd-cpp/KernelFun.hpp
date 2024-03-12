@@ -6,7 +6,26 @@
 class KernelFun
 {
 public:
-    KernelFun(const size_t &dim) : dimension_(dim) {}
+    KernelFun() {}
+
+    virtual ~KernelFun(){};
+
+    KernelFun(const KernelFun &obj)
+    {
+        dimension_ = obj.dimension_;
+        kernel_ad_ = obj.kernel_ad_;
+    }
+
+    KernelFun(const size_t &dim) : dimension_(dim), location_vec_ad_(dim) {}
+
+    virtual KernelFun &operator=(const KernelFun &obj)
+    {
+        dimension_ = obj.dimension_;
+        location_vec_ad_ = obj.location_vec_ad_;
+        kernel_ad_ = obj.kernel_ad_;
+
+        return *this;
+    }
 
     virtual void Initialize()
     {
@@ -28,17 +47,24 @@ public:
      *
      * @param params Vector of parameters in Eigen::VectorXd or Eigen::MatrixXd
      */
-    void Update(const std::vector<Eigen::MatrixXd> &params)
+    virtual void Update(const std::vector<Eigen::MatrixXd> &params)
     {
         UpdateParameters(params);
 
         SetupADFun();
     }
 
+    virtual void UpdateParameters(const std::vector<Eigen::MatrixXd> &params) = 0;
+
+    virtual void UpdateLocation(const Eigen::VectorXd &x) { location_vec_ad_ = x.cast<CppAD::AD<double>>(); }
+
+    virtual void Step()
+    {
+        SetupADFun();
+    }
+
 protected:
     virtual VectorXADd Kernel(const VectorXADd &x) = 0;
-
-    virtual void UpdateParameters(const std::vector<Eigen::MatrixXd> &params) = 0;
 
     virtual void SetupADFun()
     {
@@ -53,6 +79,8 @@ protected:
     }
 
     size_t dimension_;
+
+    VectorXADd location_vec_ad_;
 
     CppAD::ADFun<double> kernel_ad_;
 };

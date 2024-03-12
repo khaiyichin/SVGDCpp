@@ -1,12 +1,13 @@
 #ifndef SVGD_CPP_CORE_HPP
 #define SVGD_CPP_CORE_HPP
 
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/LU>
+#include <Eigen/Core>
+#include <Eigen/LU>
 #include <cppad/cppad.hpp>
 #include <exception>
 #include <type_traits>
 #include <memory>
+#include <numeric>
 
 using VectorXADd = Eigen::Matrix<CppAD::AD<double>, Eigen::Dynamic, 1>;
 using MatrixXADd = Eigen::Matrix<CppAD::AD<double>, Eigen::Dynamic, Eigen::Dynamic>;
@@ -32,5 +33,17 @@ bool CompareMatrixSizes(const T1 &a, const T2 &b)
 {
     return (a.rows() == b.rows()) && (a.cols() == b.cols());
 }
+
+struct Particles
+{
+    Particles(const Eigen::MatrixXd &coords) : coordinates(coords)
+    {
+        n = coordinates.cols();
+    }
+
+    Eigen::MatrixXd coordinates;
+
+    size_t n;
+};
 
 #endif

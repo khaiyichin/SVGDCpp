@@ -7,19 +7,11 @@
 class Distribution : public KernelFun
 {
 public:
+    Distribution() {}
+
     Distribution(const size_t &dim) : KernelFun(dim) {}
 
-    ~Distribution() {}
-
-    Eigen::VectorXd GetPDFGrad(const Eigen::VectorXd &x)
-    {
-        return pdf_ad_.Jacobian(x);
-    }
-
-    Eigen::VectorXd GetLogPDFGrad(const Eigen::VectorXd &x)
-    {
-        return logpdf_ad_.Jacobian(x);
-    }
+    virtual ~Distribution() {}
 
     double GetPDF(const Eigen::VectorXd &x)
     {
@@ -31,7 +23,42 @@ public:
         return logpdf_ad_.Forward(0, x)(0, 0);
     }
 
+    Eigen::VectorXd GetPDFGrad(const Eigen::VectorXd &x)
+    {
+        return pdf_ad_.Jacobian(x);
+    }
+
+    Eigen::VectorXd GetLogPDFGrad(const Eigen::VectorXd &x)
+    {
+        return logpdf_ad_.Jacobian(x);
+    }
+
+    Eigen::MatrixXd GetPDFHessian(const Eigen::VectorXd &x)
+    {
+        // PDF is a scalar function (1-D output), so evaluating Hessian at function of index 0
+        return Eigen::Map<Eigen::Matrix<double, -1, -1>>(pdf_ad_.Hessian(x, 0).data(), dimension_, dimension_).transpose(); // need to transpose because of column-major (default) storage
+    }
+
+    Eigen::MatrixXd GetLogPDFHessian(const Eigen::VectorXd &x)
+    {
+        // PDF is a scalar function (1-D output), so evaluating Hessian at function of index 0
+        return Eigen::Map<Eigen::Matrix<double, -1, -1>>(logpdf_ad_.Hessian(x, 0).data(), dimension_, dimension_).transpose(); // need to transpose because of column-major (default) storage
+    }
+
     double GetNormConst() { return norm_const_; }
+
+    virtual Distribution &operator=(const Distribution &obj)
+    {
+        pdf_ad_ = obj.pdf_ad_;
+        logpdf_ad_ = obj.logpdf_ad_;
+        norm_const_ = obj.norm_const_;
+
+        KernelFun::operator=(obj);
+
+        return *this;
+    }
+
+    virtual void Step() = 0;
 
 protected:
     virtual VectorXADd PDF(const VectorXADd &x)
@@ -41,7 +68,7 @@ protected:
 
     virtual VectorXADd LogPDF(const VectorXADd &x)
     {
-        return PDF(x).array().log();
+        return std::log(norm_const_) + Kernel(x).array().log();
     }
 
     /**
@@ -60,12 +87,16 @@ protected:
 
         pdf_ad_ = CppAD::ADFun<double>(x_pdf_ad, y_pdf_ad); // store operation sequence and stop recording
 
+        pdf_ad_.optimize();
+
         // Setup LogPDF
         CppAD::Independent(x_logpdf_ad); // start recording sequence
 
         y_logpdf_ad = LogPDF(x_logpdf_ad);
 
         logpdf_ad_ = CppAD::ADFun<double>(x_logpdf_ad, y_logpdf_ad); // store operation sequence and stop recording
+
+        logpdf_ad_.optimize();
     }
 
     virtual void ComputeNormConst() = 0;
