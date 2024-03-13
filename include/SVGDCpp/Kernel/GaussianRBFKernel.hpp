@@ -1,9 +1,9 @@
 #ifndef GAUSSIAN_RBF_KERNEL_HPP
 #define GAUSSIAN_RBF_KERNEL_HPP
 
-#include "SVGDCppCore.hpp"
+#include "../SVGDCppCore.hpp"
+#include "../Distribution/Distribution.hpp"
 #include "KernelFun.hpp"
-#include "Distribution.hpp"
 
 class GaussianRBFKernel : public KernelFun
 {

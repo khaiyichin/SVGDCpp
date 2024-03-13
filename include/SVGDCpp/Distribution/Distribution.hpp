@@ -1,8 +1,8 @@
 #ifndef DISTRIBUTION_HPP
 #define DISTRIBUTION_HPP
 
-#include "SVGDCppCore.hpp"
-#include "KernelFun.hpp"
+#include "../SVGDCppCore.hpp"
+#include "../Kernel/KernelFun.hpp"
 
 class Distribution : public KernelFun
 {

@@ -1,0 +1,7 @@
+#ifndef SVGD_CPP_HPP
+#define SVGD_CPP_HPP
+
+#include "SVGDCpp/SVGDCppCore.hpp"
+#include "SVGDCpp/SVGD.hpp"
+
+#endif

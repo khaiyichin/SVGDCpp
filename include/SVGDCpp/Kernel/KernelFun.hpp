@@ -1,7 +1,8 @@
 #ifndef KERNEL_FUN_HPP
 #define KERNEL_FUN_HPP
 
-#include "SVGDCppCore.hpp"
+#include "../SVGDCppCore.hpp"
+// #include "Core"
 
 class KernelFun
 {

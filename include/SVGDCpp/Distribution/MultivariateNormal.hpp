@@ -1,7 +1,7 @@
 #ifndef MULTIVARIATE_NORMAL_HPP
 #define MULTIVARIATE_NORMAL_HPP
 
-#include "SVGDCppCore.hpp"
+#include "../SVGDCppCore.hpp"
 #include "Distribution.hpp"
 
 class MultivariateNormal : public Distribution

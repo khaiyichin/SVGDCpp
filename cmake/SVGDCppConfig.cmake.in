@@ -1,0 +1,26 @@
+# Config file for the SVGDCpp library
+# It defines the following variables
+# SVGDCPP_INCLUDE_DIRS  - include directories
+# SVGDCPP_LIBRARIES     - libraries to link against
+
+# Allow downstream projects to use the library without having to manually find packages already linked
+include(CMakeFindDependencyMacro)
+
+find_dependency(Eigen3)
+find_dependency(OpenMP)
+
+@PACKAGE_INIT@
+
+# Read in the variables to include directories
+set_and_check(SVGDCPP_INCLUDE_DIR "@PACKAGE_SVGDCPP_INCLUDE_INSTALL_DIR@")
+
+# Compute paths
+get_filename_component(SVGDCPP_TARGET_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(${SVGDCPP_TARGET_CMAKE_DIR}/SVGDCppTargets.cmake) # target name is hardcoded because there's no way to pass in regular variables
+
+# Create variable to point to include directories
+list(APPEND SVGDCPP_INCLUDE_DIRS
+    ${SVGDCPP_INCLUDE_DIR}
+)
+# Create variable to point to libraries
+set(SVGDCPP_LIBRARIES SVGDCpp) # set library variable

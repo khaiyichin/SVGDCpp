@@ -1,0 +1,7 @@
+#ifndef SVGD_CPP_KERNEL_HPP
+#define SVGD_CPP_KERNEL_HPP
+
+#include "SVGDCpp/Kernel/KernelFun.hpp"
+#include "SVGDCpp/Kernel/GaussianRBFKernel.hpp"
+
+#endif
