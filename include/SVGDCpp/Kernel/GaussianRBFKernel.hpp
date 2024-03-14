@@ -1,11 +1,11 @@
-#ifndef GAUSSIAN_RBF_KERNEL_HPP
-#define GAUSSIAN_RBF_KERNEL_HPP
+#ifndef SVGD_CPP_GAUSSIAN_RBF_KERNEL_HPP
+#define SVGD_CPP_GAUSSIAN_RBF_KERNEL_HPP
 
-#include "../SVGDCppCore.hpp"
+#include "../Core.hpp"
 #include "../Distribution/Distribution.hpp"
-#include "KernelFun.hpp"
+#include "Kernel.hpp"
 
-class GaussianRBFKernel : public KernelFun
+class GaussianRBFKernel : public Kernel
 {
 public:
     enum class ScaleMethod
@@ -24,7 +24,7 @@ public:
     GaussianRBFKernel(const std::shared_ptr<Particles> p_ptr,
                       const ScaleMethod &method = ScaleMethod::Median,
                       const std::shared_ptr<Distribution> &dist_ptr = nullptr)
-        : KernelFun(p_ptr->coordinates.rows()),
+        : Kernel(p_ptr->coordinates.rows()),
           particles_ptr_(p_ptr),
           scale_method_(method),
           target_distribution_ptr_(dist_ptr)
@@ -41,7 +41,7 @@ public:
         particles_ptr_ = obj.particles_ptr_;
         target_distribution_ptr_ = obj.target_distribution_ptr_;
 
-        KernelFun::operator=(obj);
+        Kernel::operator=(obj);
 
         return *this;
     }
@@ -65,7 +65,7 @@ public:
     }
 
 protected:
-    VectorXADd Kernel(const VectorXADd &x) override
+    VectorXADd KernelFun(const VectorXADd &x) override
     {
         VectorXADd diff = x - location_vec_ad_;
         return (-diff.transpose() * scale_mat_ad_ * diff).array().exp();

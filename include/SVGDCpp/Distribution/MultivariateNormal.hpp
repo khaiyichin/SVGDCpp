@@ -1,7 +1,7 @@
-#ifndef MULTIVARIATE_NORMAL_HPP
-#define MULTIVARIATE_NORMAL_HPP
+#ifndef SVGD_CPP_MULTIVARIATE_NORMAL_HPP
+#define SVGD_CPP_MULTIVARIATE_NORMAL_HPP
 
-#include "../SVGDCppCore.hpp"
+#include "../Core.hpp"
 #include "Distribution.hpp"
 
 class MultivariateNormal : public Distribution
@@ -66,7 +66,7 @@ public:
     void Step() override {}
 
 protected:
-    VectorXADd Kernel(const VectorXADd &x) override
+    VectorXADd KernelFun(const VectorXADd &x) override
     {
         VectorXADd diff = x - mean_vec_ad_;
         return (-0.5 * (diff.transpose() * cov_mat_ad_.inverse() * diff).array()).exp();

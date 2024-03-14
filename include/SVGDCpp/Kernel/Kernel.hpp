@@ -1,25 +1,24 @@
-#ifndef KERNEL_FUN_HPP
-#define KERNEL_FUN_HPP
+#ifndef SVGD_CPP_KERNEL_HPP
+#define SVGD_CPP_KERNEL_HPP
 
-#include "../SVGDCppCore.hpp"
-// #include "Core"
+#include "../Core.hpp"
 
-class KernelFun
+class Kernel
 {
 public:
-    KernelFun() {}
+    Kernel() {}
 
-    virtual ~KernelFun(){};
+    virtual ~Kernel(){};
 
-    KernelFun(const KernelFun &obj)
+    Kernel(const Kernel &obj)
     {
         dimension_ = obj.dimension_;
         kernel_ad_ = obj.kernel_ad_;
     }
 
-    KernelFun(const size_t &dim) : dimension_(dim), location_vec_ad_(dim) {}
+    Kernel(const size_t &dim) : dimension_(dim), location_vec_ad_(dim) {}
 
-    virtual KernelFun &operator=(const KernelFun &obj)
+    virtual Kernel &operator=(const Kernel &obj)
     {
         dimension_ = obj.dimension_;
         location_vec_ad_ = obj.location_vec_ad_;
@@ -65,7 +64,7 @@ public:
     }
 
 protected:
-    virtual VectorXADd Kernel(const VectorXADd &x) = 0;
+    virtual VectorXADd KernelFun(const VectorXADd &x) = 0;
 
     virtual void SetupADFun()
     {
@@ -74,7 +73,7 @@ protected:
         // Setup PDF
         CppAD::Independent(x_kernel_ad); // start recording sequence
 
-        y_kernel_ad = Kernel(x_kernel_ad);
+        y_kernel_ad = KernelFun(x_kernel_ad);
 
         kernel_ad_ = CppAD::ADFun<double>(x_kernel_ad, y_kernel_ad); // store operation sequence and stop recording
     }

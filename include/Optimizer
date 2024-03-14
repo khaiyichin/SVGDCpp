@@ -1,0 +1,9 @@
+#ifndef SVGD_CPP_OPTIMIZER_MODULE_HPP
+#define SVGD_CPP_OPTIMIZER_MODULE_HPP
+
+#include "SVGDCpp/Optimizer/Optimizer.hpp"
+#include "SVGDCpp/Optimizer/RMSProp.hpp"
+#include "SVGDCpp/Optimizer/AdaGrad.hpp"
+#include "SVGDCpp/Optimizer/Adam.hpp"
+
+#endif

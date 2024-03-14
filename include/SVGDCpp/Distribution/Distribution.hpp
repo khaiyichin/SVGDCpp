@@ -1,15 +1,15 @@
-#ifndef DISTRIBUTION_HPP
-#define DISTRIBUTION_HPP
+#ifndef SVGD_CPP_DISTRIBUTION_HPP
+#define SVGD_CPP_DISTRIBUTION_HPP
 
-#include "../SVGDCppCore.hpp"
-#include "../Kernel/KernelFun.hpp"
+#include "../Core.hpp"
+#include "../Kernel/Kernel.hpp"
 
-class Distribution : public KernelFun
+class Distribution : public Kernel
 {
 public:
     Distribution() {}
 
-    Distribution(const size_t &dim) : KernelFun(dim) {}
+    Distribution(const size_t &dim) : Kernel(dim) {}
 
     virtual ~Distribution() {}
 
@@ -53,7 +53,7 @@ public:
         logpdf_ad_ = obj.logpdf_ad_;
         norm_const_ = obj.norm_const_;
 
-        KernelFun::operator=(obj);
+        Kernel::operator=(obj);
 
         return *this;
     }
@@ -63,12 +63,12 @@ public:
 protected:
     virtual VectorXADd PDF(const VectorXADd &x)
     {
-        return norm_const_ * Kernel(x);
+        return norm_const_ * KernelFun(x);
     }
 
     virtual VectorXADd LogPDF(const VectorXADd &x)
     {
-        return std::log(norm_const_) + Kernel(x).array().log();
+        return std::log(norm_const_) + KernelFun(x).array().log();
     }
 
     /**

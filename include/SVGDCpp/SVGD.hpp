@@ -1,7 +1,7 @@
-#ifndef SVGD_HPP
-#define SVGD_HPP
+#ifndef SVGD_CPP_SVGD_HPP
+#define SVGD_CPP_SVGD_HPP
 
-#include "SVGDCppCore.hpp"
+#include "Core.hpp"
 #include "Distribution/Distribution.hpp"
 
 // Particles struct
