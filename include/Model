@@ -1,0 +1,7 @@
+#ifndef SVGD_CPP_MODEL_MODULE_HPP
+#define SVGD_CPP_MODEL_MODULE_HPP
+
+#include "SVGDCpp/Model/Model.hpp"
+#include "SVGDCpp/Model/MultivariateNormal.hpp"
+
+#endif

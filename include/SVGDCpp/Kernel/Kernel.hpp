@@ -12,8 +12,7 @@ public:
 
     Kernel(const Kernel &obj)
     {
-        dimension_ = obj.dimension_;
-        kernel_ad_ = obj.kernel_ad_;
+        *this = obj;
     }
 
     Kernel(const size_t &dim) : dimension_(dim), location_vec_ad_(dim) {}
@@ -22,7 +21,7 @@ public:
     {
         dimension_ = obj.dimension_;
         location_vec_ad_ = obj.location_vec_ad_;
-        kernel_ad_ = obj.kernel_ad_;
+        kernel_fun_ad_ = obj.kernel_fun_ad_;
 
         return *this;
     }
@@ -32,14 +31,14 @@ public:
         SetupADFun();
     }
 
-    double GetKernel(const Eigen::VectorXd &x)
+    double EvaluateKernel(const Eigen::VectorXd &x)
     {
-        return kernel_ad_.Forward(0, x)(0, 0);
+        return kernel_fun_ad_.Forward(0, x)(0, 0);
     }
 
-    Eigen::VectorXd GetKernelGrad(const Eigen::VectorXd &x)
+    Eigen::VectorXd EvaluateKernelGrad(const Eigen::VectorXd &x)
     {
-        return kernel_ad_.Jacobian(x);
+        return kernel_fun_ad_.Jacobian(x);
     }
 
     /**
@@ -75,14 +74,14 @@ protected:
 
         y_kernel_ad = KernelFun(x_kernel_ad);
 
-        kernel_ad_ = CppAD::ADFun<double>(x_kernel_ad, y_kernel_ad); // store operation sequence and stop recording
+        kernel_fun_ad_ = CppAD::ADFun<double>(x_kernel_ad, y_kernel_ad); // store operation sequence and stop recording
     }
 
     size_t dimension_;
 
     VectorXADd location_vec_ad_;
 
-    CppAD::ADFun<double> kernel_ad_;
+    CppAD::ADFun<double> kernel_fun_ad_;
 };
 
 #endif

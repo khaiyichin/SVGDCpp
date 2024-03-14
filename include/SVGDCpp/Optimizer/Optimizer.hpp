@@ -10,10 +10,7 @@ public:
 
     virtual ~Optimizer() {}
 
-    virtual Eigen::MatrixXd operator()(const Eigen::MatrixXd &grad_matrix)
-    {
-        throw std::runtime_error("Optimizer functor `operator()` method must be provided in derived class.");
-    }
+    virtual Eigen::MatrixXd Step(const Eigen::MatrixXd &grad_matrix) = 0;
 
 protected:
     bool initial_run_ = true;

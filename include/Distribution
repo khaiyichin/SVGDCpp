@@ -1,7 +1,0 @@
-#ifndef SVGD_CPP_DISTRIBUTION_MODULE_HPP
-#define SVGD_CPP_DISTRIBUTION_MODULE_HPP
-
-#include "SVGDCpp/Distribution/Distribution.hpp"
-#include "SVGDCpp/Distribution/MultivariateNormal.hpp"
-
-#endif

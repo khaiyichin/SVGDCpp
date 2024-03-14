@@ -2,10 +2,12 @@
 #define SVGD_CPP_SVGD_HPP
 
 #include "Core.hpp"
-#include "Distribution/Distribution.hpp"
+#include "Kernel/Kernel.hpp"
+#include "Model/Model.hpp"
+#include "Optimizer/Optimizer.hpp"
 
 // Particles struct
-template <typename KType, typename DType>
+template <typename KType, typename MType, typename OType>
 class SVGD
 {
 public:
@@ -13,20 +15,18 @@ public:
         : dimension_(dim),
           num_iterations_(iter),
           parallel_(parallel),
-          //   kernel_vec_ptr_(std::make_unique<std::vector<KType>>()),
-          kernel_ptr_(std::make_unique<KType>()),
-          distribution_ptr_(std::make_unique<DType>())
+          kernel_ptr_(nullptr),
+          model_ptr_(nullptr),
+          optimizer_ptr_(nullptr)
     {
     }
 
     ~SVGD() {}
 
-    void test()
-    {
-        std::cout << "debug " << distribution_ptr_->GetNormConst() << std::endl;
-    }
-
-    void Initialize(const std::shared_ptr<Particles> &particles_ptr, const KType &kernel_obj, const DType &distribution_obj)
+    void Initialize(const std::shared_ptr<Particles> &particles_ptr,
+                    const std::shared_ptr<KType> &kernel_ptr,
+                    const std::shared_ptr<MType> &model_ptr,
+                    const std::shared_ptr<OType> &optimizer_ptr)
     {
         particles_ptr_ = particles_ptr;
 
@@ -38,11 +38,15 @@ public:
         //     kernel_vec_ptr_->push_back(k);
         // }
 
-        kernel_grad_indexer_ = Eigen::MatrixXd::Identity(dimension_, dimension_).replicate(particles_ptr->n, 1);
+        log_pdf_grad_matrix_.resize(particles_ptr_->n, dimension_);                                              // n x m
+        kernel_matrix_.resize(particles_ptr_->n, particles_ptr_->n);                                             // n x n
+        kernel_grad_matrix_.resize(dimension_ * particles_ptr_->n, particles_ptr_->n);                           // (m*n) x n
+        kernel_grad_indexer_ = Eigen::MatrixXd::Identity(dimension_, dimension_).replicate(particles_ptr->n, 1); // (m*n) x m
 
-        // Store the kernel and distribution objects
-        kernel_ptr_ = std::make_unique<KType>(kernel_obj); // CAN WE REMOVE THIS???? since we store the kernel in the eigen matrix already, what's the point of having this unique pointer around?
-        distribution_ptr_ = std::make_shared<DType>(distribution_obj);
+        // Store the kernel, distribution, and optimzer objects
+        kernel_ptr_ = kernel_ptr;
+        model_ptr_ = model_ptr;
+        optimizer_ptr_ = optimizer_ptr;
 
         if (parallel_)
         {
@@ -58,7 +62,7 @@ public:
         }
 
         // Initialize the distribution
-        distribution_ptr_->Initialize();
+        model_ptr_->Initialize();
     }
 
     void UpdateKernel(const std::vector<Eigen::MatrixXd> &params)
@@ -79,60 +83,53 @@ public:
         }
     }
 
-    void UpdateDistribution(const std::vector<Eigen::MatrixXd> &params)
+    void UpdateModel(const std::vector<Eigen::MatrixXd> &params)
     {
-        distribution_ptr_->UpdateParameters(params);
+        model_ptr_->UpdateParameters(params);
     }
 
-    std::vector<Eigen::VectorXd> Run(const std::vector<Eigen::VectorXd> &particle_coords)
+    std::vector<Eigen::VectorXd> Run()
     {
-
-        // Eigen::Map<Eigen::Matrix<KType, 1, -1>> kernel_matrix(kernel_vec_ptr_->data(), 1, particles_ptr_->n);
-
-        // Create n copies of the kernel function
-        // Eigen::Matrix<KType, 1, -1> kernel_matrix(particles_ptr_->n);
-
-        // for (size_t i = 0; i < particles_ptr_->n; ++i)
-        // {
-        //     kernel_matrix(i) = *kernel_ptr_;
-        // }
-
         // Run L iterations
         for (size_t i = 0; i < num_iterations_; ++i)
         {
             // x + e * phi(x)
             Step();
         }
+
+        std::vector<Eigen::VectorXd> vec(particles_ptr_->n);
+
+        for (size_t i = 0; i < particles_ptr_->n; ++i)
+        {
+            vec[i] = particles_ptr_->coordinates.col(i);
+        }
+
+        return vec;
     }
 
 protected:
-    // compute phi
-
     void Step()
     {
-        Eigen::MatrixXd phi_matrix = ComputePhi();
+        model_ptr_->Step();
 
-        // Compute step size
-        // TODO
-        Eigen::MatrixXd step_matrix = AdjustStepSize(phi_matrix);
+        kernel_ptr_->Step();
 
         // Update particle positions
-        particles_ptr_->coordinates += step_matrix;
+        particles_ptr_->coordinates += optimizer_ptr_->Step(ComputePhi());
     }
 
+    /**
+     * @brief Compute the Stein variational gradient
+     *
+     * @return Eigen::MatrixXd Matrix of gradients with the size of (dimension) x (num of particles)
+     */
     Eigen::MatrixXd ComputePhi()
     {
-        // Compute log pdf grad, kernel and kernel grad
-        Eigen::MatrixXd log_pdf_grad_val(particles_ptr_->n, dimension_);                    // n x m
-        Eigen::MatrixXd kernel_val(particles_ptr_->n, particles_ptr_->n);                   // n x n
-        Eigen::MatrixXd kernel_grad_val(dimension_ * particles_ptr_->n, particles_ptr_->n); // (nxm) x n
-
-        distribution_ptr_->Step();
 
         for (size_t i = 0; i < particles_ptr_->n; ++i)
         {
             // Compute log pdf grad
-            log_pdf_grad_val.block(i, 0, 1, dimension_) = distribution_ptr_->GetLogPDFGrad(particles_ptr_->coordinates.col(i));
+            log_pdf_grad_matrix_.block(i, 0, 1, dimension_) = model_ptr_->EvaluateLogModelGrad(particles_ptr_->coordinates.col(i));
 
             // Compute kernel and grad kernel
             if (parallel_)
@@ -146,27 +143,21 @@ protected:
 
                 // for (size_t j = 0; j < particles_ptr_->n; ++i)
                 // {
-                //     kernel_val(i, j) = kernel_vector_(i).GetKernel(particles_ptr_->coordinates.col(j));                                            // k(x_j, x_i)
-                //     kernel_grad_val.block(j * dimension_, i, dimension_, 1) = kernel_vector_(i).GetKernelGrad(particles_ptr_->coordinates.col(j)); // grad k(x_j, x_i)
+                //     kernel_val(i, j) = kernel_vector_(i).EvaluateKernel(particles_ptr_->coordinates.col(j));                                            // k(x_j, x_i)
+                //     kernel_grad_val.block(j * dimension_, i, dimension_, 1) = kernel_vector_(i).EvaluateKernelGrad(particles_ptr_->coordinates.col(j)); // grad k(x_j, x_i)
                 // }
             }
             else
             {
                 for (size_t j = 0; j < particles_ptr_->n; ++i)
                 {
-                    kernel_val(i, j) = kernel_ptr_->GetKernel(particles_ptr_->coordinates.col(j));                                               // k(x_j, x_i)
-                    kernel_grad_val.block(j * dimension_, i, dimension_, 1) = kernel_ptr_->GetKernelGrad(particles_ptr_->coordinates.col(j)); // grad k(x_j, x_i)
+                    kernel_matrix_(i, j) = kernel_ptr_->EvaluateKernel(particles_ptr_->coordinates.col(j));                                            // k(x_j, x_i)
+                    kernel_grad_matrix_.block(j * dimension_, i, dimension_, 1) = kernel_ptr_->EvaluateKernelGrad(particles_ptr_->coordinates.col(j)); // grad k(x_j, x_i)
                 }
             }
         }
 
-        // Compute Phi matrix
-        return 1.0 / particles_ptr_->n * (kernel_val * log_pdf_grad_val + kernel_grad_val.transpose() * kernel_grad_indexer_).transpose();
-    }
-
-    Eigen::MatrixXd AdjustStepSize(const Eigen::MatrixXd &phi)
-    {
-        // TODO
+        return (1.0 / particles_ptr_->n) * (kernel_matrix_ * log_pdf_grad_matrix_ + kernel_grad_matrix_.transpose() * kernel_grad_indexer_).transpose();
     }
 
     size_t dimension_;
@@ -177,19 +168,26 @@ protected:
 
     const bool parallel_;
 
+    Eigen::MatrixXd log_pdf_grad_matrix_;
+
+    Eigen::MatrixXd kernel_matrix_;
+
+    Eigen::MatrixXd kernel_grad_matrix_;
+
     Eigen::MatrixXd kernel_grad_indexer_;
 
     Eigen::Matrix<KType, -1, 1> kernel_vector_;
 
     std::shared_ptr<Particles> particles_ptr_;
 
-    std::shared_ptr<DType> distribution_ptr_;
-
     // Idea: we store N kernel function objects for N corresponding particles; the particles' state is used to parametrize
     // the kernels. Here we're trying to trade memory for speed; with a kernel 'responsible' for each particle we don't
     // need to keep updating the kernel parameters
-    // std::unique_ptr<std::vector<KType>> kernel_vec_ptr_;
-    std::unique_ptr<KType> kernel_ptr_;
+    std::shared_ptr<KType> kernel_ptr_;
+
+    std::shared_ptr<MType> model_ptr_;
+
+    std::shared_ptr<OType> optimizer_ptr_;
 };
 
 #endif

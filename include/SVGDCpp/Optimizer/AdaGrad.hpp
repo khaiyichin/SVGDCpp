@@ -11,7 +11,7 @@ public:
 
     virtual ~AdaGrad() {}
 
-    virtual Eigen::MatrixXd operator()(const Eigen::MatrixXd &grad_matrix)
+    virtual Eigen::MatrixXd Step(const Eigen::MatrixXd &grad_matrix)
     {
         if (initial_run_)
         {

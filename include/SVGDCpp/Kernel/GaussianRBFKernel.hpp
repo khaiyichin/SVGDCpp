@@ -2,7 +2,7 @@
 #define SVGD_CPP_GAUSSIAN_RBF_KERNEL_HPP
 
 #include "../Core.hpp"
-#include "../Distribution/Distribution.hpp"
+#include "../Model/Model.hpp"
 #include "Kernel.hpp"
 
 class GaussianRBFKernel : public Kernel
@@ -23,12 +23,17 @@ public:
 
     GaussianRBFKernel(const std::shared_ptr<Particles> p_ptr,
                       const ScaleMethod &method = ScaleMethod::Median,
-                      const std::shared_ptr<Distribution> &dist_ptr = nullptr)
+                      const std::shared_ptr<Model> &model_ptr = nullptr)
         : Kernel(p_ptr->coordinates.rows()),
           particles_ptr_(p_ptr),
           scale_method_(method),
-          target_distribution_ptr_(dist_ptr)
+          target_model_ptr_(model_ptr)
     {
+        if (scale_method_ == ScaleMethod::Hessian && !model_ptr)
+        {
+            throw std::runtime_error("Hessian-based scale requires a model.");
+        }
+
         ComputeScale();
     }
 
@@ -39,7 +44,7 @@ public:
         scale_mat_ad_ = obj.scale_mat_ad_;
         scale_method_ = obj.scale_method_;
         particles_ptr_ = obj.particles_ptr_;
-        target_distribution_ptr_ = obj.target_distribution_ptr_;
+        target_model_ptr_ = obj.target_model_ptr_;
 
         Kernel::operator=(obj);
 
@@ -112,7 +117,7 @@ protected:
                 For this method, particles_ptr_->coordinates should contain the m-dimensional coordinates of n particles as an (m x n) matrix
             */
 
-            target_distribution_ptr_->Initialize();
+            target_model_ptr_->Initialize();
 
             // Sum the hessians based on all of the particles' positions
             Eigen::MatrixXd hessian_sum(dimension_, dimension_);
@@ -121,7 +126,7 @@ protected:
 
             for (size_t i = 0; i < particles_ptr_->n; ++i)
             {
-                hessian_sum += target_distribution_ptr_->GetLogPDFHessian(particles_ptr_->coordinates.col(i));
+                hessian_sum += target_model_ptr_->EvaluateLogModelHessian(particles_ptr_->coordinates.col(i));
             }
 
             scale_mat_ad_ = (1.0 / (2.0 * particles_ptr_->n * dimension_) * hessian_sum).cast<CppAD::AD<double>>();
@@ -171,7 +176,7 @@ protected:
 
     std::shared_ptr<Particles> particles_ptr_;
 
-    std::shared_ptr<Distribution> target_distribution_ptr_;
+    std::shared_ptr<Model> target_model_ptr_;
 };
 
 #endif
