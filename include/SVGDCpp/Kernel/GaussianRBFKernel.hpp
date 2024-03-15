@@ -12,6 +12,7 @@ public:
     {
         Median = 0,
         Hessian = 1
+        // TODO: constant scale
     };
 
     GaussianRBFKernel() {}
@@ -21,11 +22,11 @@ public:
         *this = obj;
     }
 
-    GaussianRBFKernel(const std::shared_ptr<Particles> p_ptr,
+    GaussianRBFKernel(const std::shared_ptr<Eigen::MatrixXd> coord_mat_ptr,
                       const ScaleMethod &method = ScaleMethod::Median,
                       const std::shared_ptr<Model> &model_ptr = nullptr)
-        : Kernel(p_ptr->coordinates.rows()),
-          particles_ptr_(p_ptr),
+        : Kernel(coord_mat_ptr->rows()),
+          coord_matrix_ptr_(coord_mat_ptr),
           scale_method_(method),
           target_model_ptr_(model_ptr)
     {
@@ -33,8 +34,6 @@ public:
         {
             throw std::runtime_error("Hessian-based scale requires a model.");
         }
-
-        ComputeScale();
     }
 
     ~GaussianRBFKernel() {}
@@ -43,12 +42,19 @@ public:
     {
         scale_mat_ad_ = obj.scale_mat_ad_;
         scale_method_ = obj.scale_method_;
-        particles_ptr_ = obj.particles_ptr_;
+        coord_matrix_ptr_ = obj.coord_matrix_ptr_;
         target_model_ptr_ = obj.target_model_ptr_;
 
         Kernel::operator=(obj);
 
         return *this;
+    }
+
+    void Initialize() override
+    {
+        ComputeScale();
+
+        Kernel::Initialize();
     }
 
     /**
@@ -59,14 +65,12 @@ public:
      */
     void UpdateParameters(const std::vector<Eigen::MatrixXd> &params = std::vector<Eigen::MatrixXd>()) override
     {
-        ComputeScale();
+        Initialize();
     }
 
     void Step() override
     {
         ComputeScale();
-
-        SetupADFun();
     }
 
 protected:
@@ -87,7 +91,7 @@ protected:
                 Bayesian Inference Algorithm,” in Advances in Neural Information Processing Systems, Curran Associates,
                 Inc., 2016.
 
-                For this method, particles_ptr_->coordinates should contain the m-dimensional coordinates of n particles as an (m x n) matrix
+                For this method, (*coord_matrix_ptr_) should contain the m-dimensional coordinates of n particles as an (m x n) matrix
             */
 
             // Create location vector of type double to perform arithmetic
@@ -99,11 +103,11 @@ protected:
             }
 
             // Compute pairwise distances from current location coordinate
-            Eigen::RowVectorXd distances = (particles_ptr_->coordinates.colwise() - location_vec).colwise().squaredNorm();
+            Eigen::RowVectorXd distances = (coord_matrix_ptr_->colwise() - location_vec).colwise().squaredNorm();
 
             // Compute the scale
             scale_mat_ad_ =
-                Eigen::Matrix<CppAD::AD<double>, 1, 1>(std::pow(ComputeMedian(distances), 2) / std::log(particles_ptr_->n));
+                Eigen::Matrix<CppAD::AD<double>, 1, 1>(std::pow(ComputeMedian(distances), 2) / std::log(coord_matrix_ptr_->cols()));
 
             break;
         }
@@ -114,7 +118,7 @@ protected:
                 variational Newton method,” in Advances in Neural Information Processing Systems, Curran Associates, Inc.,
                 2018.
 
-                For this method, particles_ptr_->coordinates should contain the m-dimensional coordinates of n particles as an (m x n) matrix
+                For this method, (*coord_matrix_ptr_) should contain the m-dimensional coordinates of n particles as an (m x n) matrix
             */
 
             target_model_ptr_->Initialize();
@@ -124,12 +128,12 @@ protected:
 
             hessian_sum.setZero();
 
-            for (size_t i = 0; i < particles_ptr_->n; ++i)
+            for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
             {
-                hessian_sum += target_model_ptr_->EvaluateLogModelHessian(particles_ptr_->coordinates.col(i));
+                hessian_sum += target_model_ptr_->EvaluateLogModelHessian(coord_matrix_ptr_->col(i));
             }
 
-            scale_mat_ad_ = (1.0 / (2.0 * particles_ptr_->n * dimension_) * hessian_sum).cast<CppAD::AD<double>>();
+            scale_mat_ad_ = (1.0 / (2.0 * coord_matrix_ptr_->cols() * dimension_) * hessian_sum).cast<CppAD::AD<double>>();
 
             break;
         }
@@ -174,7 +178,7 @@ protected:
 
     ScaleMethod scale_method_;
 
-    std::shared_ptr<Particles> particles_ptr_;
+    std::shared_ptr<Eigen::MatrixXd> coord_matrix_ptr_;
 
     std::shared_ptr<Model> target_model_ptr_;
 };

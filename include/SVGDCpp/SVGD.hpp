@@ -11,58 +11,63 @@ template <typename KType, typename MType, typename OType>
 class SVGD
 {
 public:
-    SVGD(const size_t dim, const size_t &iter, const bool &parallel = false)
-        : dimension_(dim),
+    SVGD(
+        const size_t &dim,
+        const size_t &iter,
+        const std::shared_ptr<Eigen::MatrixXd> &coord_mat_ptr,
+        const std::shared_ptr<KType> &kernel_ptr,
+        const std::shared_ptr<MType> &model_ptr,
+        const std::shared_ptr<OType> &optimizer_ptr,
+        const bool &parallel = false)
+        : dimension_(coord_mat_ptr->rows()),
           num_iterations_(iter),
-          parallel_(parallel),
-          kernel_ptr_(nullptr),
-          model_ptr_(nullptr),
-          optimizer_ptr_(nullptr)
+          parallel_(parallel)
     {
+        if (dimension_ != dim)
+        {
+            throw std::runtime_error("Specified dimension does not match the particle coordinate matrix.");
+        }
+
+        coord_matrix_ptr_ = coord_mat_ptr;
+
+        log_pdf_grad_matrix_.resize(dimension_, coord_matrix_ptr_->cols());                                               // m x n
+        kernel_matrix_.resize(coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());                                      // n x n
+        kernel_grad_matrix_.resize(dimension_ * coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());                    // (m*n) x n
+        kernel_grad_indexer_ = Eigen::MatrixXd::Identity(dimension_, dimension_).replicate(1, coord_matrix_ptr_->cols()); // m x (m*n)
+
+        // Store the kernel, distribution, and optimizer objects
+        kernel_ptr_ = kernel_ptr;
+        model_ptr_ = model_ptr;
+        optimizer_ptr_ = optimizer_ptr;
     }
 
     ~SVGD() {}
 
-    void Initialize(const std::shared_ptr<Particles> &particles_ptr,
-                    const std::shared_ptr<KType> &kernel_ptr,
-                    const std::shared_ptr<MType> &model_ptr,
-                    const std::shared_ptr<OType> &optimizer_ptr)
+    void Initialize()
     {
-        particles_ptr_ = particles_ptr;
+        // Initialize the model
+        model_ptr_->Initialize();
 
-        // // Create n copies of the kernel function to store
-        // for (size_t i = 0; i < particles_ptr_->n; ++i)
-        // {
-        //     KType k = kernel_obj;
-        //     k.Initialize();
-        //     kernel_vec_ptr_->push_back(k);
-        // }
+        // Initialize the optimizer
+        optimizer_ptr_->Initialize();
 
-        log_pdf_grad_matrix_.resize(particles_ptr_->n, dimension_);                                              // n x m
-        kernel_matrix_.resize(particles_ptr_->n, particles_ptr_->n);                                             // n x n
-        kernel_grad_matrix_.resize(dimension_ * particles_ptr_->n, particles_ptr_->n);                           // (m*n) x n
-        kernel_grad_indexer_ = Eigen::MatrixXd::Identity(dimension_, dimension_).replicate(particles_ptr->n, 1); // (m*n) x m
-
-        // Store the kernel, distribution, and optimzer objects
-        kernel_ptr_ = kernel_ptr;
-        model_ptr_ = model_ptr;
-        optimizer_ptr_ = optimizer_ptr;
-
+        // Initialize the kernel
         if (parallel_)
         {
             // Create n copies of the kernel function and initialize them
-            kernel_vector_.resize(particles_ptr_->n, 1);
+            kernel_vector_.resize(coord_matrix_ptr_->cols(), 1);
 
-            for (size_t i = 0; i < particles_ptr_->n; ++i)
+            for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
             {
                 kernel_vector_(i) = *kernel_ptr_;
-                kernel_vector_(i).UpdateLocation(particles_ptr_->coordinates.col(i)); // particle coordinates matrix is expected to have dimension rows x n columns
+                kernel_vector_(i).UpdateLocation(coord_matrix_ptr_->col(i)); // particle coordinates matrix is expected to have dimension rows x n columns
                 kernel_vector_(i).Initialize();
             }
         }
-
-        // Initialize the distribution
-        model_ptr_->Initialize();
+        else
+        {
+            kernel_ptr_->Initialize();
+        }
     }
 
     void UpdateKernel(const std::vector<Eigen::MatrixXd> &params)
@@ -88,23 +93,14 @@ public:
         model_ptr_->UpdateParameters(params);
     }
 
-    std::vector<Eigen::VectorXd> Run()
+    void Run()
     {
         // Run L iterations
-        for (size_t i = 0; i < num_iterations_; ++i)
+        for (size_t iter = 0; iter < num_iterations_; ++iter)
         {
             // x + e * phi(x)
             Step();
         }
-
-        std::vector<Eigen::VectorXd> vec(particles_ptr_->n);
-
-        for (size_t i = 0; i < particles_ptr_->n; ++i)
-        {
-            vec[i] = particles_ptr_->coordinates.col(i);
-        }
-
-        return vec;
     }
 
 protected:
@@ -115,7 +111,7 @@ protected:
         kernel_ptr_->Step();
 
         // Update particle positions
-        particles_ptr_->coordinates += optimizer_ptr_->Step(ComputePhi());
+        *coord_matrix_ptr_ += optimizer_ptr_->Step(ComputePhi());
     }
 
     /**
@@ -125,39 +121,40 @@ protected:
      */
     Eigen::MatrixXd ComputePhi()
     {
-
-        for (size_t i = 0; i < particles_ptr_->n; ++i)
+        for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
         {
             // Compute log pdf grad
-            log_pdf_grad_matrix_.block(i, 0, 1, dimension_) = model_ptr_->EvaluateLogModelGrad(particles_ptr_->coordinates.col(i));
+            log_pdf_grad_matrix_.block(0, i, dimension_, 1) = model_ptr_->EvaluateLogModelGrad(coord_matrix_ptr_->col(i));
+
+            kernel_ptr_->UpdateLocation(coord_matrix_ptr_->col(i));
 
             // Compute kernel and grad kernel
             if (parallel_)
             {
                 // TODO
                 // // Update kernel function location
-                // kernel_vector_(i).UpdateLocation(particles_ptr_->coordinates.col(i));
+                // kernel_vector_(i).UpdateLocation(coord_matrix_ptr_->col(i));
 
                 // // Run a single step on the kernel functions
                 // kernel_vector_(i).Step();
 
-                // for (size_t j = 0; j < particles_ptr_->n; ++i)
+                // for (size_t j = 0; j < coord_matrix_ptr_->cols(); ++i)
                 // {
-                //     kernel_val(i, j) = kernel_vector_(i).EvaluateKernel(particles_ptr_->coordinates.col(j));                                            // k(x_j, x_i)
-                //     kernel_grad_val.block(j * dimension_, i, dimension_, 1) = kernel_vector_(i).EvaluateKernelGrad(particles_ptr_->coordinates.col(j)); // grad k(x_j, x_i)
+                //     kernel_val(i, j) = kernel_vector_(i).EvaluateKernel(coord_matrix_ptr_->col(j));                                            // k(x_j, x_i)
+                //     kernel_grad_val.block(j * dimension_, i, dimension_, 1) = kernel_vector_(i).EvaluateKernelGrad(coord_matrix_ptr_->col(j)); // grad k(x_j, x_i)
                 // }
             }
             else
             {
-                for (size_t j = 0; j < particles_ptr_->n; ++i)
+                for (size_t j = 0; j < coord_matrix_ptr_->cols(); ++j)
                 {
-                    kernel_matrix_(i, j) = kernel_ptr_->EvaluateKernel(particles_ptr_->coordinates.col(j));                                            // k(x_j, x_i)
-                    kernel_grad_matrix_.block(j * dimension_, i, dimension_, 1) = kernel_ptr_->EvaluateKernelGrad(particles_ptr_->coordinates.col(j)); // grad k(x_j, x_i)
+                    kernel_matrix_(j, i) = kernel_ptr_->EvaluateKernel(coord_matrix_ptr_->col(j));                                            // k(x_j, x_i)
+                    kernel_grad_matrix_.block(j * dimension_, i, dimension_, 1) = kernel_ptr_->EvaluateKernelGrad(coord_matrix_ptr_->col(j)); // grad k(x_j, x_i)
                 }
             }
         }
 
-        return (1.0 / particles_ptr_->n) * (kernel_matrix_ * log_pdf_grad_matrix_ + kernel_grad_matrix_.transpose() * kernel_grad_indexer_).transpose();
+        return (1.0 / coord_matrix_ptr_->cols()) * (log_pdf_grad_matrix_ * kernel_matrix_ + kernel_grad_indexer_ * kernel_grad_matrix_);
     }
 
     size_t dimension_;
@@ -178,7 +175,7 @@ protected:
 
     Eigen::Matrix<KType, -1, 1> kernel_vector_;
 
-    std::shared_ptr<Particles> particles_ptr_;
+    std::shared_ptr<Eigen::MatrixXd> coord_matrix_ptr_;
 
     // Idea: we store N kernel function objects for N corresponding particles; the particles' state is used to parametrize
     // the kernels. Here we're trying to trade memory for speed; with a kernel 'responsible' for each particle we don't

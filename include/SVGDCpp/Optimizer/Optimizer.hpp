@@ -10,10 +10,11 @@ public:
 
     virtual ~Optimizer() {}
 
+    virtual void Initialize() = 0;
+
     virtual Eigen::MatrixXd Step(const Eigen::MatrixXd &grad_matrix) = 0;
 
 protected:
-    bool initial_run_ = true;
 
     double learning_rate_;
 

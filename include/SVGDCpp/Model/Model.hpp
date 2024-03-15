@@ -63,18 +63,6 @@ public:
         return Eigen::Map<Eigen::Matrix<double, -1, -1>>(logmodel_fun_ad_.Hessian(x, 0).data(), dimension_, dimension_).transpose(); // need to transpose because of column-major (default) storage
     }
 
-    /**
-     * @brief Update the model with new parameters
-     *
-     * @param params Vector of parameters in Eigen::VectorXd or Eigen::MatrixXd
-     */
-    virtual void Update(const std::vector<Eigen::MatrixXd> &params)
-    {
-        UpdateParameters(params);
-
-        Initialize();
-    }
-
     virtual void UpdateParameters(const std::vector<Eigen::MatrixXd> &params) = 0;
 
     virtual void Step() {}

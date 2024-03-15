@@ -73,6 +73,11 @@ public:
         return std::log(norm_const_) + EvaluateLogModel(x);
     }
 
+    Eigen::VectorXd EvaluateModelGradNormalized(const Eigen::VectorXd &x)
+    {
+        return norm_const_ * model_fun_ad_.Jacobian(x);
+    }
+
     double GetNormalizationConstant() {return norm_const_;}
 
 protected:

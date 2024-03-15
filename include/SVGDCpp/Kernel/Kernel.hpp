@@ -41,26 +41,16 @@ public:
         return kernel_fun_ad_.Jacobian(x);
     }
 
-    /**
-     * @brief Update the distribution with new parameters
-     *
-     * @param params Vector of parameters in Eigen::VectorXd or Eigen::MatrixXd
-     */
-    virtual void Update(const std::vector<Eigen::MatrixXd> &params)
-    {
-        UpdateParameters(params);
-
-        SetupADFun();
-    }
-
     virtual void UpdateParameters(const std::vector<Eigen::MatrixXd> &params) = 0;
 
-    virtual void UpdateLocation(const Eigen::VectorXd &x) { location_vec_ad_ = x.cast<CppAD::AD<double>>(); }
-
-    virtual void Step()
+    virtual void UpdateLocation(const Eigen::VectorXd &x)
     {
-        SetupADFun();
+        location_vec_ad_ = x.cast<CppAD::AD<double>>();
+
+        Initialize();
     }
+
+    virtual void Step() {}
 
 protected:
     virtual VectorXADd KernelFun(const VectorXADd &x) = 0;
