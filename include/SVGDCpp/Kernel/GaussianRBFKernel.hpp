@@ -107,7 +107,7 @@ protected:
 
             // Compute the scale
             scale_mat_ad_ =
-                Eigen::Matrix<CppAD::AD<double>, 1, 1>(std::pow(ComputeMedian(distances), 2) / std::log(coord_matrix_ptr_->cols()));
+                std::pow(ComputeMedian(distances), 2) / std::log(coord_matrix_ptr_->cols()) * MatrixXADd::Identity(dimension_, dimension_);
 
             break;
         }
