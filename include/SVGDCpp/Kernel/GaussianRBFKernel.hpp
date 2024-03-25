@@ -159,8 +159,9 @@ protected:
      */
     VectorXADd KernelFun(const VectorXADd &x) const override
     {
-        VectorXADd diff = x - location_vec_ad_;
-        return (-diff.transpose() * inverse_scale_mat_ad_ * diff).array().exp();
+        VectorXADd result(1), diff = x - location_vec_ad_;
+        result << (-diff.transpose() * inverse_scale_mat_ad_ * diff).array().exp()
+        return result;
     }
 
     /**

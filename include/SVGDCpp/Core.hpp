@@ -20,14 +20,23 @@
 #include <memory>
 #include <numeric>
 
-using VectorXADd = Eigen::Matrix<CppAD::AD<double>, Eigen::Dynamic, 1>;              ///< Alias for variable-sized Eigen vector of type CppAD::AD<double>. @ingroup Core_Module
-using MatrixXADd = Eigen::Matrix<CppAD::AD<double>, Eigen::Dynamic, Eigen::Dynamic>; ///< Alias for variable-sized Eigen matrix of type CppAD::AD<double>. @ingroup Core_Module
+/**
+ * @brief Alias for variable-sized Eigen vector of type CppAD::AD<double>.
+ * @ingroup Core_Module
+ */
+using VectorXADd = Eigen::Matrix<CppAD::AD<double>, Eigen::Dynamic, 1>;
+
+/**
+ * @brief Alias for variable-sized Eigen matrix of type CppAD::AD<double>.
+ * @ingroup Core_Module
+ */
+using MatrixXADd = Eigen::Matrix<CppAD::AD<double>, Eigen::Dynamic, Eigen::Dynamic>;
 
 /**
  * @brief Check whether two vectors have the same number of rows.
  *
- * @tparam T1 Type of first vector, should be either Eigen::VectorXd or VectorXADd.
- * @tparam T2 Type of second vector, should be either Eigen::VectorXd or VectorXADd.
+ * @tparam T1 Type of first vector, should be either Eigen::VectorXd or @ref VectorXADd.
+ * @tparam T2 Type of second vector, should be either Eigen::VectorXd or @ref VectorXADd.
  * @param a First vector.
  * @param b Second vector.
  * @return True if both vectors have same number of rows, false otherwise.

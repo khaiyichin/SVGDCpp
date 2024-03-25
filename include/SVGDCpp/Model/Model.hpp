@@ -24,10 +24,7 @@ class Model
 public:
     /**
      * @brief Default constructor
-     *
-     * This should never be called, see the preferred constructor below.
-     * @todo Can this be removed?
-     *
+     * @details This should almost never be called directly. Use instead @ref Model(const size_t &dim).
      */
     Model() {}
 
@@ -45,8 +42,7 @@ public:
 
     /**
      * @brief Construct a new Model object.
-     *
-     * This is the preferred method to instantiate a Model class if no derived classed from Model is used.
+     * @details This is the preferred method to instantiate a Model class if no derived classed from Model is used.
      *
      * @param dim
      */
@@ -302,7 +298,6 @@ private:
         // logmodel_fun_ad_.optimize();
     }
 
-    // FunctionPtr model_fun_;
     std::function<VectorXADd(const VectorXADd &)> model_fun_; ///< Symbolic function of the model.
 
     CppAD::ADFun<double> model_fun_ad_; ///< CppAD function of the model.

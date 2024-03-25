@@ -1,14 +1,43 @@
+/**
+ * @file MultivariateNormal.hpp
+ * @author Khai Yi Chin (khaiyichin@gmail.com)
+ * @brief Multivariate normal model class header.
+ * @version 0.1
+ * @date 2024-03-22
+ *
+ * @copyright Copyright (c) 2024
+ *
+ */
+
 #ifndef SVGD_CPP_MULTIVARIATE_NORMAL_HPP
 #define SVGD_CPP_MULTIVARIATE_NORMAL_HPP
 
 #include "../Core.hpp"
 #include "Model.hpp"
 
+/**
+ * @class MultivariateNormal
+ * @brief Implementation of a Multivariate Normal model.
+ * @details The base methods @ref Model::EvaluateModel and @ref Model::EvaluateLogModel are not normalized;
+ * use @ref EvaluateModelNormalized and @ref EvaluateLogModelNormalized instead if normalized values are desired.
+ * @ingroup Model_Module
+ */
 class MultivariateNormal : public Model
 {
 public:
+    /**
+     * @brief Default constructor.
+     * @details This should almost never be called directly.
+     * Use instead @ref MultivariateNormal(const Eigen::VectorXd &mean, const Eigen::MatrixXd &covariance).
+     */
     MultivariateNormal() {}
 
+    /**
+     * @brief Construct a new MultivariateNormal object.
+     * @details This is the preferred method to instantiate a Multivariate Normal class.
+     * @param mean Variable-sized Eigen vector whose dimensions must be compatible with @a covariance.
+     * @param covariance Variable-sized Eigen matrix whose dimensions must be compatible with @a mean.
+     */
     MultivariateNormal(const Eigen::VectorXd &mean, const Eigen::MatrixXd &covariance) : Model(mean.rows())
     {
         // Ensure that the dimensions of mean matches covariance
@@ -18,32 +47,36 @@ public:
             throw std::runtime_error("Dimensions of parameter vectors/matrices do not match.");
         }
 
-        // Store a regular and CppAD copy
-        mean_vec_ad_ = mean.cast<CppAD::AD<double>>();
-        cov_mat_ad_ = covariance.cast<CppAD::AD<double>>();
+        // Store parameters
+        model_parameters_.push_back(mean);
+        model_parameters_.push_back(covariance);
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormalizationConstant();
     }
 
-    MultivariateNormal(const MultivariateNormal &obj)
-    {
-        *this = obj;
-    }
+    /**
+     * @brief Default destructor.
+     *
+     */
+    ~MultivariateNormal() {}
 
-    ~MultivariateNormal(){};
-
+    /**
+     * @brief Assignment operator.
+     */
     MultivariateNormal &operator=(const MultivariateNormal &obj)
     {
-        dimension_ = obj.dimension_;
-        mean_vec_ad_ = obj.mean_vec_ad_;
-        cov_mat_ad_ = obj.cov_mat_ad_;
-
         Model::operator=(obj);
+        norm_const_ = obj.norm_const_;
 
         return *this;
     }
 
+    /**
+     * @brief Update the model parameters.
+     * @details This method is overridden to provide some safeguards but is otherise identical to @ref Model::UpdateParameters.
+     * @param params Vector of variable-sized Eigen objects.
+     */
     void UpdateParameters(const std::vector<Eigen::MatrixXd> &params) override
     {
         Eigen::VectorXd mean = params[0];
@@ -55,49 +88,85 @@ public:
         {
             throw std::runtime_error("Dimensions of parameter vectors/matrices do not match.");
         }
+        else if (mean.rows() != dimension_)
+        {
+            throw std::runtime_error("Dimensions of parameter vectors/matrices do not match original dimension.");
+        }
 
-        mean_vec_ad_ = mean.cast<CppAD::AD<double>>();
-        cov_mat_ad_ = covariance.cast<CppAD::AD<double>>();
+        model_parameters_[0] = mean;
+        model_parameters_[1] = covariance;
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormalizationConstant();
+
+        Initialize();
     }
 
+    /**
+     * @brief Evaluate the normalized multivariate normal PDF.
+     *
+     * @param x Argument that the PDF is evaluated at.
+     * @return Normalized PDF value.
+     */
     double EvaluateModelNormalized(const Eigen::VectorXd &x)
     {
         return norm_const_ * EvaluateModel(x);
     }
 
+    /**
+     * @brief Evaluate the normalized log multivariate normal PDF.
+     *
+     * @param x Argument that the log PDF is evaluated at.
+     * @return Normalized log PDF value.
+     */
     double EvaluateLogModelNormalized(const Eigen::VectorXd &x)
     {
         return std::log(norm_const_) + EvaluateLogModel(x);
     }
 
+    /**
+     * @brief Evaluate the gradient of the normalized multivariate normal PDF.
+     *
+     * @param x Argument that the gradient is evaluated at.
+     * @return Normalized PDF gradient.
+     */
     Eigen::VectorXd EvaluateModelGradNormalized(const Eigen::VectorXd &x)
     {
-        return norm_const_ * model_fun_ad_.Jacobian(x);
+        return norm_const_ * EvaluateModelGrad(x);
     }
 
-    double GetNormalizationConstant() {return norm_const_;}
+    /**
+     * @brief Get the normalization constant.
+     *
+     * @return Normalization constant of the multivariate normal distribution.
+     */
+    double GetNormalizationConstant() { return norm_const_; }
 
 protected:
-    VectorXADd ModelFun(const VectorXADd &x) override
+    /**
+     * @brief Symbolic function of the multivariate normal PDF.
+     * @details This symbolic function is not normalized.
+     * @param x Argument that the model is evaluated at (the independent variable).
+     * @return Output of the model function (the dependent variable).
+     */
+    VectorXADd ModelFun(const VectorXADd &x) const override
     {
-        VectorXADd diff = x - mean_vec_ad_;
-        return (-0.5 * (diff.transpose() * cov_mat_ad_.inverse() * diff).array()).exp();
+        VectorXADd result(1), diff = x - model_parameters_[0].cast<CppAD::AD<double>>();
+        result << (-0.5 * (diff.transpose() * model_parameters_[1].cast<CppAD::AD<double>>().inverse() * diff).array()).exp();
+        return result;
     }
 
+    /**
+     * @brief Compute the normalization constant for the multivariate normal.
+     *
+     */
     void ComputeNormalizationConstant()
     {
         norm_const_ = 1.0 /
-                      (std::pow(2.0 * M_PI, dimension_ / 2.0) * std::sqrt(CppAD::Value(cov_mat_ad_.determinant())));
+                      (std::pow(2.0 * M_PI, dimension_ / 2.0) * std::sqrt(model_parameters_[1].determinant()));
     }
 
-    VectorXADd mean_vec_ad_;
-
-    MatrixXADd cov_mat_ad_;
-
-    double norm_const_;
+    double norm_const_; ///< Normalization constant.
 };
 
 #endif
