@@ -160,7 +160,7 @@ protected:
     VectorXADd KernelFun(const VectorXADd &x) const override
     {
         VectorXADd result(1), diff = x - location_vec_ad_;
-        result << (-diff.transpose() * inverse_scale_mat_ad_ * diff).array().exp()
+        result << (-diff.transpose() * inverse_scale_mat_ad_ * diff).array().exp();
         return result;
     }
 
@@ -187,9 +187,9 @@ protected:
 
             replicated_diag_matrix_ = squared_coord_matrix_.diagonal().replicate(1, coord_matrix_ptr_->cols());
 
-            squared_pairwise_dist_matrix_ = (replicated_diag_matrix_ + replicated_diag_matrix_.transpose() - 2 * squared_coord_matrix_);
+            squared_pairwise_dist_matrix_ = replicated_diag_matrix_ + replicated_diag_matrix_.transpose() - 2 * squared_coord_matrix_;
 
-            pairwise_dist_vec_ = Eigen::Map<Eigen::RowVectorXd>(squared_pairwise_dist_matrix_.data(), coord_matrix_ptr_->cols() * coord_matrix_ptr_->cols());
+            pairwise_dist_vec_ = Eigen::Map<Eigen::RowVectorXd>(squared_pairwise_dist_matrix_.data(), coord_matrix_ptr_->cols() * coord_matrix_ptr_->cols()).array().sqrt();
 
             // Compute the scale
             inverse_scale_mat_ad_ =

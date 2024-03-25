@@ -112,15 +112,16 @@ public:
         // Initialize the kernel
         if (parallel_)
         {
-            // Create n copies of the kernel function and initialize them
-            kernel_vector_.resize(coord_matrix_ptr_->cols(), 1);
+            /** @todo Need to implement */
+            // // Create n copies of the kernel function and initialize them
+            // kernel_vector_.resize(coord_matrix_ptr_->cols(), 1);
 
-            for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
-            {
-                kernel_vector_(i) = *kernel_ptr_;
-                kernel_vector_(i).UpdateLocation(coord_matrix_ptr_->col(i)); // particle coordinates matrix is expected to have dimension rows x n columns
-                kernel_vector_(i).Initialize();
-            }
+            // for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            // {
+            //     kernel_vector_(i) = *kernel_ptr_;
+            //     kernel_vector_(i).UpdateLocation(coord_matrix_ptr_->col(i)); // particle coordinates matrix is expected to have dimension rows x n columns
+            //     kernel_vector_(i).Initialize();
+            // }
         }
         else
         {
