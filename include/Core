@@ -1,3 +1,14 @@
+/**
+ * @defgroup Core_Module Core Module
+ * @brief Core functionality for the SVGDCpp library.
+ * @details This required module contains the @ref SVGD class and functions that form the core functionality
+ * of the SVGDCpp library.
+ *
+ * @code{.cpp}
+ * #include <SVGD/Core>
+ * @endcode
+ */
+
 #ifndef SVGD_CPP_CORE_MODULE_HPP
 #define SVGD_CPP_CORE_MODULE_HPP
 

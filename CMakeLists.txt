@@ -6,6 +6,33 @@ cmake_minimum_required(VERSION 3.15)
 # Define variables
 set(SVGDCPP_CMAKE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME}")
 set(SVGDCPP_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}") # assign include destination to variable
+set(API_DOCUMENTATION_DIR ${CMAKE_INSTALL_PREFIX}/share/doc/${PROJECT_NAME})
+
+# Build and install API documentation
+if(CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_CONFIGURATION_TYPES MATCHES Release)
+    find_package(Doxygen)
+
+    if(DOXYGEN_FOUND)
+        set(DOXYGEN_IN doc/Doxyfile.in)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+        # Configure the file
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        message(STATUS "Doxygen build started")
+
+        # Build doxygen documentation
+        add_custom_target(Doxygen_documentation ALL
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen" VERBATIM
+        )
+
+        # Install built documentation
+        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs/html DESTINATION ${API_DOCUMENTATION_DIR})
+    else()
+        message(WARNING "Doxygen need to be installed to generate the doxygen documentation")
+    endif()
+endif()
 
 # Build library
 find_package(Eigen3 CONFIG REQUIRED)

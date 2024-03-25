@@ -1,3 +1,12 @@
+/**
+ * @defgroup Model_Module Model Module
+ * @brief Provides functionality to define models.
+ * @details This module provides the base and derived @ref Model classes.
+ *
+ * @code{.cpp}
+ * #include <SVGDCpp/Model>
+ * @endcode
+ */
 #ifndef SVGD_CPP_MODEL_MODULE_HPP
 #define SVGD_CPP_MODEL_MODULE_HPP
 
