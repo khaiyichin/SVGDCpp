@@ -140,55 +140,75 @@ public:
 
     /**
      * @brief Evaluate the model.
-     *
+     * @details Override this function in the derived class if you have and wish to use a closed-form function
+     * directly, bypassing the use of @ref Model::ModelFun.
+     * @warning Override this in the derived class only if you **do not** intend to compose a new model from said derived class.
+     * This is because functional composition relies on the @ref Model::ModelFun method, which means that the resulting model
+     * will not use the overridden function.
      * @param x Argument that the model is evaluated at.
      * @return Evaluated model value.
      */
-    double EvaluateModel(const Eigen::VectorXd &x)
+    virtual double EvaluateModel(const Eigen::VectorXd &x)
     {
         return model_fun_ad_.Forward(0, x)(0, 0);
     }
 
     /**
      * @brief Evaluate the log model.
-     *
+     * @details Override this function in the derived class if you have and wish to use a closed-form function
+     * directly, bypassing the use of @ref Model::ModelFun.
+     * @warning Override this in the derived class only if you **do not** intend to compose a new model from said derived class.
+     * This is because functional composition relies on the @ref Model::ModelFun method, which means that the resulting model
+     * will not use the overridden function.
      * @param x Argument that the log model is evaluated at.
      * @return Evaluated log model value.
      */
-    double EvaluateLogModel(const Eigen::VectorXd &x)
+    virtual double EvaluateLogModel(const Eigen::VectorXd &x)
     {
         return logmodel_fun_ad_.Forward(0, x)(0, 0);
     }
 
     /**
      * @brief Evaluate the gradient of the model.
-     *
+     * @details Override this function in the derived class if you have and wish to use a closed-form function
+     * instead of relying on automatic differentiation. This will bypass the use of @ref Model::ModelFun.
+     * @warning Override this in the derived class only if you **do not** intend to compose a new model from said derived class.
+     * This is because functional composition relies on the @ref Model::ModelFun method, which means that the resulting model
+     * will not use the overridden function.
      * @param x Argument that the gradient is evaluated at.
      * @return Evaluated model gradient vector.
      */
-    Eigen::VectorXd EvaluateModelGrad(const Eigen::VectorXd &x)
+    virtual Eigen::VectorXd EvaluateModelGrad(const Eigen::VectorXd &x)
     {
         return model_fun_ad_.Jacobian(x);
     }
 
     /**
      * @brief Evaluate the gradient of the log model.
-     *
+     * @details Override this function in the derived class if you have and wish to use a closed-form function
+     * instead of relying on automatic differentiation. This will bypass the use of @ref Model::ModelFun.
+     * @warning Override this in the derived class only if you **do not** intend to compose a new model from said derived class.
+     * This is because functional composition relies on the @ref Model::ModelFun method, which means that the resulting model
+     * will not use the overridden function.
      * @param x Argument that the gradient of the log model is evaluated at.
      * @return Evaluated log model gradient vector.
      */
-    Eigen::VectorXd EvaluateLogModelGrad(const Eigen::VectorXd &x)
+    virtual Eigen::VectorXd EvaluateLogModelGrad(const Eigen::VectorXd &x)
     {
         return logmodel_fun_ad_.Jacobian(x);
     }
 
     /**
      * @brief Evaluate the Hessian of the model.
-     *
+     * @details Override this function in the derived class if you have and wish to use a closed-form function
+     * instead of relying on automatic differentiation. This will bypass the use of @ref Model::ModelFun.
+     * @warning Override this in the derived class only if you **do not** intend to compose a new model from said derived class.
+     * This is because functional composition relies on the @ref Model::ModelFun method, which means that the resulting model
+     * will not use the overridden function.
      * @param x Argument that the Hessian of the model is evaluated at.
      * @return Evaluated model Hessian matrix.
      */
-    Eigen::MatrixXd EvaluateModelHessian(const Eigen::VectorXd &x)
+    virtual Eigen::MatrixXd EvaluateModelHessian(const Eigen::VectorXd &x)
     {
         // Model is a scalar function (1-D output), so evaluating Hessian at function of index 0
         return Eigen::Map<Eigen::Matrix<double, -1, -1>>(model_fun_ad_.Hessian(x, 0).data(), dimension_, dimension_).transpose(); // need to transpose because of column-major (default) storage
@@ -196,11 +216,15 @@ public:
 
     /**
      * @brief Evaluate the Hessian of the log model.
-     *
+     * @details Override this function in the derived class if you have and wish to use a closed-form function
+     * instead of relying on automatic differentiation. This will bypass the use of @ref Model::ModelFun.
+     * @warning Override this in the derived class only if you **do not** intend to compose a new model from said derived class.
+     * This is because functional composition relies on the @ref Model::ModelFun method, which means that the resulting model
+     * will not use the overridden function.
      * @param x Argument that the Hessian of the log model is evaluated at.
      * @return Evaluated log model Hessian matrix.
      */
-    Eigen::MatrixXd EvaluateLogModelHessian(const Eigen::VectorXd &x)
+    virtual Eigen::MatrixXd EvaluateLogModelHessian(const Eigen::VectorXd &x)
     {
         // Model is a scalar function (1-D output), so evaluating Hessian at function of index 0
         return Eigen::Map<Eigen::Matrix<double, -1, -1>>(logmodel_fun_ad_.Hessian(x, 0).data(), dimension_, dimension_).transpose(); // need to transpose because of column-major (default) storage
@@ -254,11 +278,6 @@ protected:
         return model_fun_(x);
     }
 
-    size_t dimension_; ///< Dimension of the particle coordinates.
-
-    std::vector<Eigen::MatrixXd> model_parameters_; ///< Parameters of the model function.
-
-private:
     /**
      * @brief Symbolic function of the log model, used by CppAD to compute derivatives.
      *
@@ -270,6 +289,11 @@ private:
         return ModelFun(x).array().log();
     }
 
+    size_t dimension_; ///< Dimension of the particle coordinates.
+
+    std::vector<Eigen::MatrixXd> model_parameters_; ///< Parameters of the model function.
+
+private:
     /**
      * @brief Setup the CppAD function.
      *

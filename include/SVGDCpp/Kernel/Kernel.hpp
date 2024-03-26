@@ -134,7 +134,11 @@ public:
 
     /**
      * @brief Evaluate the kernel function.
-     *
+     * @details Override this function in the derived class if you have and wish to use a closed-form function
+     * directly, bypassing the use of @ref Kernel::KernelFun.
+     * @warning Override this in the derived class only if you **do not** intend to compose a new kernel from said derived class.
+     * This is because functional composition relies on the @ref Kernel::KernelFun method, which means that the resulting kernel
+     * will not use the overridden function.
      * @param x Argument that the kernel is evaluated at.
      * @return Evaluated kernel function value.
      */
@@ -145,7 +149,11 @@ public:
 
     /**
      * @brief Evaluate the gradient of the kernel function.
-     *
+     * @details Override this function in the derived class if you have and wish to use a closed-form function
+     * instead of relying on automatic differentiation. This will bypass the use of @ref Kernel::KernelFun.
+     * @warning Override this in the derived class only if you **do not** intend to compose a new kernel from said derived class.
+     * This is because functional composition relies on the @ref Kernel::KernelFun method, which means that the resulting kernel
+     * will not use the overridden function.
      * @param x Argument that the gradient is evaluated at.
      * @return Evaluated gradient vector.
      */
