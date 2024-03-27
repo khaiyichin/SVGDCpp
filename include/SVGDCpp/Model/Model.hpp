@@ -59,7 +59,7 @@ public:
         // Ensure that dimensions are correct
         if (this->dimension_ != obj.dimension_)
         {
-            throw std::runtime_error("Only models with the same variable dimensions can be added.");
+            throw std::runtime_error("SVGDCpp: Only models with the same variable dimensions can be added.");
         }
 
         // Define the sum of two models
@@ -92,7 +92,7 @@ public:
         // Ensure that dimensions are correct
         if (this->dimension_ != obj.dimension_)
         {
-            throw std::runtime_error("Only models with the same variable dimensions can be multiplied.");
+            throw std::runtime_error("SVGDCpp: Only models with the same variable dimensions can be multiplied.");
         }
 
         // Define the product of two models

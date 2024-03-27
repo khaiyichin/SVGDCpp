@@ -64,12 +64,12 @@ public:
     {
         if (scale_method_ == ScaleMethod::Hessian && !model_ptr)
         {
-            throw std::runtime_error("Hessian-based scale requires a model.");
+            throw std::runtime_error("SVGDCpp: Hessian-based scale requires a model.");
         }
 
         if (dimension_ != coord_matrix_ptr_->rows())
         {
-            throw std::runtime_error("The number of rows = " + std::to_string(coord_matrix_ptr_->rows()) + "in the provided coordinate matrix needs to match the specified dimension.");
+            throw std::runtime_error("SVGDCpp: The number of rows = " + std::to_string(coord_matrix_ptr_->rows()) + "in the provided coordinate matrix needs to match the specified dimension.");
         }
 
         // Initialize sizes

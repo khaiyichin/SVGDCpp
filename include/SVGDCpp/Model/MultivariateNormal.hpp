@@ -44,7 +44,7 @@ public:
         if (!CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.col(0)) ||
             !CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.row(0)))
         {
-            throw std::runtime_error("Dimensions of parameter vectors/matrices do not match.");
+            throw std::runtime_error("SVGDCpp: Dimensions of parameter vectors/matrices do not match.");
         }
 
         // Store parameters
@@ -86,11 +86,11 @@ public:
         if (!CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.col(0)) ||
             !CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.row(0)))
         {
-            throw std::runtime_error("Dimensions of parameter vectors/matrices do not match.");
+            throw std::runtime_error("SVGDCpp: Dimensions of parameter vectors/matrices do not match.");
         }
         else if (mean.rows() != dimension_)
         {
-            throw std::runtime_error("Dimensions of parameter vectors/matrices do not match original dimension.");
+            throw std::runtime_error("SVGDCpp: Dimensions of parameter vectors/matrices do not match original dimension.");
         }
 
         model_parameters_[0] = mean;

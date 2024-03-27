@@ -59,6 +59,8 @@ public:
      * @param kernel_ptr Pointer to a @ref Kernel (or its derived class) object.
      * @param model_ptr Pointer to a @ref Model (or its derived class) object.
      * @param optimizer_ptr Pointer to an @ref Optimizer (or its derived class) object.
+     * @param bound_lower Lower bound for the problem.
+     * @param bound_upper Upper bound for the problem.
      * @param parallel Flag to run SVGD in multi-threaded mode.
      */
     SVGD(
@@ -68,6 +70,8 @@ public:
         const std::shared_ptr<Kernel> &kernel_ptr,
         const std::shared_ptr<Model> &model_ptr,
         const std::shared_ptr<Optimizer> &optimizer_ptr,
+        const Eigen::VectorXd &bound_lower = Eigen::Matrix<double, 1, 1>(-INFINITY),
+        const Eigen::VectorXd &bound_upper = Eigen::Matrix<double, 1, 1>(INFINITY),
         const bool &parallel = false)
         : dimension_(coord_mat_ptr->rows()),
           num_iterations_(iter),
@@ -75,7 +79,42 @@ public:
     {
         if (dimension_ != dim)
         {
-            throw std::runtime_error("Specified dimension does not match the particle coordinate matrix.");
+            throw std::runtime_error("SVGDCpp: Specified dimension does not match the particle coordinate matrix.");
+        }
+
+        // Assign bounds
+        if (bound_lower.rows() == 1 &&
+            bound_lower == Eigen::Matrix<double, 1, 1>(-INFINITY) &&
+            bound_upper.rows() == 1 &&
+            bound_upper == Eigen::Matrix<double, 1, 1>(INFINITY))
+        {
+            check_bounds_ = false; // avoid unnecessary bound checking if bounds are default
+        }
+        else
+        {
+            if (bound_lower.rows() != dimension_ && bound_lower.rows() != 1)
+            {
+                throw std::runtime_error("SVGDCpp: The provided lower bounds have incorrect dimensions.");
+            }
+            else
+            {
+                std::cout << "SVGDCpp: Lower bound set to " << bound_lower.transpose() << std::endl;
+                check_bounds_ = true;
+            }
+
+            bounds_.first = bound_lower;
+
+            if (bound_upper.rows() != dimension_ && bound_upper.rows() != 1)
+            {
+                throw std::runtime_error("SVGDCpp: The provided upper bounds have incorrect dimensions.");
+            }
+            else
+            {
+                std::cout << "SVGDCpp: Upper bound set to " << bound_upper.transpose() << std::endl;
+                check_bounds_ = true;
+            }
+
+            bounds_.second = bound_upper;
         }
 
         coord_matrix_ptr_ = coord_mat_ptr; // coordinate matrix of n particles in a m-dimensional problem is m x n
@@ -194,6 +233,16 @@ protected:
 
         // Update particle positions
         *coord_matrix_ptr_ += optimizer_ptr_->Step(ComputePhi());
+
+        // Check bounds
+        if (check_bounds_)
+        {
+            for (size_t i = 0; i < coord_matrix_ptr_->rows(); ++i)
+            {
+                coord_matrix_ptr_->row(i) = (coord_matrix_ptr_->row(i).array() < bounds_.first(i)).select(bounds_.first(i), coord_matrix_ptr_->row(i));
+                coord_matrix_ptr_->row(i) = (coord_matrix_ptr_->row(i).array() > bounds_.second(i)).select(bounds_.second(i), coord_matrix_ptr_->row(i));
+            }
+        }
     }
 
     /**
@@ -245,6 +294,8 @@ protected:
 
     const bool parallel_; ///< Flag to indicate whether to run SVGD with threads. @todo Need to implement
 
+    bool check_bounds_ = false; ///< Flag to indicate whether bounds checking is necessary.
+
     // Idea: we store N kernel function objects for N corresponding particles; the particles' state is used to parametrize
     // the kernels. Here we're trying to trade memory for speed; with a kernel 'responsible' for each particle we don't
     // need to keep updating the kernel parameters
@@ -255,6 +306,8 @@ protected:
     std::shared_ptr<Optimizer> optimizer_ptr_; ///< Pointer to the Optimizer object.
 
     std::shared_ptr<Eigen::MatrixXd> coord_matrix_ptr_; ///< Pointer to the particle coordinate matrix; shape is @a m (@ref dimension_) x @a n (number of particles).
+
+    std::pair<Eigen::VectorXd, Eigen::VectorXd> bounds_; ///< Pair of bounds (lower, upper) to the problem.
 
     Eigen::MatrixXd log_model_grad_matrix_; ///< Matrix containing the gradients of the log model function; shape is @a m x @a n.
 

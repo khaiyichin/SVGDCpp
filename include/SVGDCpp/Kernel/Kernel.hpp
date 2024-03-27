@@ -59,7 +59,7 @@ public:
         // Ensure that dimensions are correct
         if (this->dimension_ != obj.dimension_)
         {
-            throw std::runtime_error("Only kernels with the same variable dimensions can be added.");
+            throw std::runtime_error("SVGDCpp: Only kernels with the same variable dimensions can be added.");
         }
 
         auto sum_kernel_fun = [this, &obj](const VectorXADd &x)
@@ -89,7 +89,7 @@ public:
         // Ensure that dimensions are correct
         if (this->dimension_ != obj.dimension_)
         {
-            throw std::runtime_error("Only kernels with the same variable dimensions can be multiplied.");
+            throw std::runtime_error("SVGDCpp: Only kernels with the same variable dimensions can be multiplied.");
         }
 
         auto product_kernel_fun = [this, &obj](const VectorXADd &x)

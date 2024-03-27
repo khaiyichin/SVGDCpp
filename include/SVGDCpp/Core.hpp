@@ -19,6 +19,8 @@
 #include <type_traits>
 #include <memory>
 #include <numeric>
+#include <cmath>
+#include <utility>
 
 /**
  * @brief Alias for variable-sized Eigen vector of type CppAD::AD<double>.
