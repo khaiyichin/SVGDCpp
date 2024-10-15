@@ -12,3 +12,5 @@ Final particle coordinates
   1.16686   1.82829 -0.375293   2.64404 -0.148336   1.15547  -1.79038   3.21318  0.828686 -0.556122
 ```
 or through the provided Jupyter notebooks. The notebooks should already contain rendered figures, but you can re-run them as long as you set up a Python kernel (can be done using the provided `requirements.txt` file and a virtual environment).
+
+_Note: if the figures don't render on GitHub, you can use [nbviewer](nbviewer.org) to view the notebooks._
