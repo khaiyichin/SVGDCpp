@@ -1,7 +1,7 @@
+cmake_minimum_required(VERSION 3.15)
 project(SVGDCpp)
 
 set(CMAKE_CXX_STANDARD 17)
-cmake_minimum_required(VERSION 3.15)
 
 # Define variables
 set(SVGDCPP_CMAKE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/cmake")
@@ -89,3 +89,6 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
     DESTINATION "${SVGDCPP_CMAKE_INSTALL_DIR}"
 )
+
+# Install examples
+add_subdirectory(examples)
