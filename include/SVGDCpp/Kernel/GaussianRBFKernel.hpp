@@ -40,14 +40,6 @@ public:
     GaussianRBFKernel() {}
 
     /**
-     * @brief Copy constructor.
-     */
-    GaussianRBFKernel(const GaussianRBFKernel &obj)
-    {
-        *this = obj;
-    }
-
-    /**
      * @brief Construct a new GaussianRBFKernel object.
      *
      * @param coord_mat_ptr Shared pointer to the matrix of particles' coordinates.
@@ -58,8 +50,8 @@ public:
                       const ScaleMethod &method = ScaleMethod::Median,
                       const std::shared_ptr<Model> &model_ptr = nullptr)
         : Kernel(coord_mat_ptr->rows()),
-          coord_matrix_ptr_(coord_mat_ptr),
           scale_method_(method),
+          coord_matrix_ptr_(coord_mat_ptr),
           target_model_ptr_(model_ptr)
     {
         if (scale_method_ == ScaleMethod::Hessian && !model_ptr)
@@ -109,6 +101,12 @@ public:
 
         return *this;
     }
+
+    /**
+     * @brief Prohibit implicit conversion by assignment operator.
+     *
+     */
+    GaussianRBFKernel &operator=(const Kernel &obj) = delete;
 
     /**
      * @brief Initialize the kernel.
@@ -214,7 +212,7 @@ protected:
 
             hessian_sum.setZero();
 
-            for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
             {
                 hessian_sum += -target_model_ptr_->EvaluateLogModelHessian(coord_matrix_ptr_->col(i));
             }

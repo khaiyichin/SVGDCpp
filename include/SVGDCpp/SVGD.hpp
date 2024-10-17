@@ -237,7 +237,7 @@ protected:
         // Check bounds
         if (check_bounds_)
         {
-            for (size_t i = 0; i < coord_matrix_ptr_->rows(); ++i)
+            for (int i = 0; i < coord_matrix_ptr_->rows(); ++i)
             {
                 coord_matrix_ptr_->row(i) = (coord_matrix_ptr_->row(i).array() < bounds_.first(i)).select(bounds_.first(i), coord_matrix_ptr_->row(i));
                 coord_matrix_ptr_->row(i) = (coord_matrix_ptr_->row(i).array() > bounds_.second(i)).select(bounds_.second(i), coord_matrix_ptr_->row(i));
@@ -252,7 +252,7 @@ protected:
      */
     Eigen::MatrixXd ComputePhi()
     {
-        for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
+        for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
         {
             // Compute log pdf grad
             log_model_grad_matrix_.block(0, i, dimension_, 1) = model_ptr_->EvaluateLogModelGrad(coord_matrix_ptr_->col(i));
@@ -277,7 +277,7 @@ protected:
             }
             else
             {
-                for (size_t j = 0; j < coord_matrix_ptr_->cols(); ++j)
+                for (int j = 0; j < coord_matrix_ptr_->cols(); ++j)
                 {
                     kernel_matrix_(j, i) = kernel_ptr_->EvaluateKernel(coord_matrix_ptr_->col(j));                                            // k(x_j, x_i)
                     kernel_grad_matrix_.block(j * dimension_, i, dimension_, 1) = kernel_ptr_->EvaluateKernelGrad(coord_matrix_ptr_->col(j)); // grad k(x_j, x_i)
@@ -288,7 +288,7 @@ protected:
         return (1.0 / coord_matrix_ptr_->cols()) * (log_model_grad_matrix_ * kernel_matrix_ + kernel_grad_indexer_ * kernel_grad_matrix_);
     }
 
-    size_t dimension_; ///< Dimension of the particle coordinates.
+    int dimension_ = -1; ///< Dimension of the particle coordinates.
 
     size_t num_iterations_; ///< Number of iterations to run SVGD.
 

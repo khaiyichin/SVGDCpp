@@ -83,6 +83,12 @@ public:
     }
 
     /**
+     * @brief Prohibit implicit conversion by assignment operator.
+     *
+     */
+    MultivariateNormal &operator=(const Model &other) = delete;
+
+    /**
      * @brief Update the model parameters.
      * @details This method is overridden to provide some safeguards but is otherwise identical to @ref Model::UpdateParameters.
      * @param params Vector of variable-sized Eigen objects.

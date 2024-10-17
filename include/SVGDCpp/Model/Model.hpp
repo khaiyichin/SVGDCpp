@@ -127,7 +127,7 @@ public:
     /**
      * @brief Assignment operator.
      */
-    virtual Model &operator=(const Model &obj)
+    Model &operator=(const Model &obj)
     {
         dimension_ = obj.dimension_;
         model_parameters_ = obj.model_parameters_;
@@ -321,7 +321,7 @@ protected:
         return ModelFun(x).array().log();
     }
 
-    size_t dimension_ = -1; ///< Dimension of the particle coordinates.
+    int dimension_ = -1; ///< Dimension of the particle coordinates.
 
     std::vector<Eigen::MatrixXd> model_parameters_; ///< Parameters of the model function.
 

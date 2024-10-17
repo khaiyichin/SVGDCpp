@@ -121,7 +121,7 @@ public:
     /**
      * @brief Assignment operator.
      */
-    virtual Kernel &operator=(const Kernel &obj)
+    Kernel &operator=(const Kernel &obj)
     {
         dimension_ = obj.dimension_;
         location_vec_ad_ = obj.location_vec_ad_;
@@ -231,7 +231,7 @@ protected:
         return kernel_fun_(x);
     }
 
-    size_t dimension_; ///< Dimension of the particle coordinates.
+    int dimension_ = -1; ///< Dimension of the particle coordinates.
 
     VectorXADd location_vec_ad_; ///< Location at which the kernel is evaluated with respect to.
 

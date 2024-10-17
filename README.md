@@ -1,3 +1,7 @@
+# SVGDCpp: A C++ implementation of SVGD
+
+WORK-IN-PROGRESS
+
 install eigen: from source or apt install libeigen3-dev
 configure cppad with the `-D cppad_testvector=eigen`, `include_eigen=true`, and `-D CMAKE_BUILD_TYPE=Release` flags
 
@@ -47,13 +51,13 @@ std::function<VectorXADd(const VectorXADd &x)> model_fun1 = [](const VectorXADd 
 std::function<VectorXADd(const VectorXADd &x)> model_fun = [](const VectorXADd &x)
     {
         VectorXADd temp(1);
-        temp << x.array().sum();
+        temp << x.sum();
         return temp;
     };
 Model model1 = Model(2);
 model1.UpdateModel(model_fun);
 Model model2 = Model(2);
-model2.UpdateModel([](const VectorXADd &x) {VectorXADd temp(1); temp << 2*x.array().sum(); return temp;});
+model2.UpdateModel([](const VectorXADd &x) {VectorXADd temp(1); temp << 2*x.sum(); return temp;});
 Model combined = model1 + model2;
 
 Eigen::VectorXd temp(2);
