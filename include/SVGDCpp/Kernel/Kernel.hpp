@@ -57,9 +57,14 @@ public:
     Kernel operator+(const Kernel &obj)
     {
         // Ensure that dimensions are correct
-        if (this->dimension_ != obj.dimension_)
+        if (dimension_ != obj.dimension_)
         {
-            throw std::runtime_error("SVGDCpp: Only kernels with the same variable dimensions can be added.");
+            throw DimensionMismatchException("Only kernels with the same variable dimensions can be added.");
+        }
+
+        if (!kernel_fun_ || !obj.kernel_fun_)
+        {
+            throw UnsetException("One of the kernel functions is unset; functional composition requires both kernel functions to be set.");
         }
 
         auto sum_kernel_fun = [this, &obj](const VectorXADd &x)
@@ -87,9 +92,14 @@ public:
     Kernel operator*(const Kernel &obj)
     {
         // Ensure that dimensions are correct
-        if (this->dimension_ != obj.dimension_)
+        if (dimension_ != obj.dimension_)
         {
-            throw std::runtime_error("SVGDCpp: Only kernels with the same variable dimensions can be multiplied.");
+            throw DimensionMismatchException("Only kernels with the same variable dimensions can be multiplied.");
+        }
+
+        if (!kernel_fun_ || !obj.kernel_fun_)
+        {
+            throw UnsetException("One of the kernel functions is unset; functional composition requires both kernel functions to be set.");
         }
 
         auto product_kernel_fun = [this, &obj](const VectorXADd &x)

@@ -79,7 +79,7 @@ public:
     {
         if (dimension_ != dim)
         {
-            throw std::runtime_error("SVGDCpp: Specified dimension does not match the particle coordinate matrix.");
+            throw DimensionMismatchException("Specified dimension does not match the particle coordinate matrix.");
         }
 
         // Assign bounds
@@ -94,7 +94,7 @@ public:
         {
             if (bound_lower.rows() != dimension_ && bound_lower.rows() != 1)
             {
-                throw std::runtime_error("SVGDCpp: The provided lower bounds have incorrect dimensions.");
+                throw DimensionMismatchException("The provided lower bounds have incorrect dimensions.");
             }
             else
             {
@@ -106,7 +106,7 @@ public:
 
             if (bound_upper.rows() != dimension_ && bound_upper.rows() != 1)
             {
-                throw std::runtime_error("SVGDCpp: The provided upper bounds have incorrect dimensions.");
+                throw DimensionMismatchException("The provided upper bounds have incorrect dimensions.");
             }
             else
             {

@@ -19,7 +19,7 @@ public:
     {
         if (beta > 1.0 || beta < 0.0)
         {
-            throw std::runtime_error("SVGDCpp: Invalid value for decay parameter beta.");
+            throw std::invalid_argument("SVGDCpp: [Argument Error] Invalid value for decay parameter beta.");
         }
     }
 

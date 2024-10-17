@@ -6,12 +6,32 @@ TODO:
 - figure out how to incorporate model_parameters_ into AD function
 - figure out whether a parameter can be changed and differentiation will still happen without `SetupADFun()` == no it doesn't update, so differentiation happens wrt to old variable
 
+## How to use as part of CMake projects?
+```cmake
+find_package(SVGDCpp REQUIRED)
 
-How to create a kernel or model?
+add_executable(test_svgd test_svgd.cpp)
 
-Note: the kernel and model have to be scalar functions
+target_link_libraries(test_svgd
+    PRIVATE
+    SVGDCpp::SVGDCpp
+)
+```
 
-Method 1: using the Kernel or Model class directly.
+Then in source code:
+```cpp
+#include <SVGDCpp/Core>
+#include <SVGDCpp/Model>
+#include <SVGDCpp/Kernel>
+#include <SVGDCpp/Optimizer>
+```
+
+
+## How to create a kernel or model?
+
+Note: the kernel and model **MUST** to be scalar functions
+
+Method 1: using the Kernel or Model class directly. This is useful if you want to compose different models into one.
 ```cpp
 
 // Create 2 models, f1 = a1 * x and f2 = a2 + exp(b * x)
@@ -45,7 +65,8 @@ model2.Initialize();
 combined.Initialize();
 ```
 
-Method 2: create a derived class from Kernel or Model.
+(if you need automatic differentiation and want to write your own derived class)
+Method 2: create a derived class from Kernel or Model (if you need automatic differentiation and want to write your own derived class). (NOT RECOMMENDED TO MANUALLY OVERRIDE `ModelFun`; create a `std::function` and feed into `UpdateModel` instead. This is because overriding `ModelFun` directly means the class silently removes the ability to update the model using `UpdateModel`) (I may remove the `virtual` keyword from the base class)
 ```cpp
 
 class MultivariateNormal : public Model
@@ -68,46 +89,19 @@ public:
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormalizationConstant();
-    }
 
-    ~MultivariateNormal() {}
-
-    MultivariateNormal &operator=(const MultivariateNormal &obj)
-    {
-        mean_vec_ad_ = obj.mean_vec_ad_;
-        cov_mat_ad_ = obj.cov_mat_ad_;
-
-        Model::operator=(obj);
-
-        return *this;
-    }
-
-    void UpdateParameters(const std::vector<Eigen::MatrixXd> &params) override
-    {
-        Eigen::VectorXd mean = params[0];
-        Eigen::MatrixXd covariance = params[1];
-
-        // Ensure that the dimensions of mean matches covariance
-        if (!CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.col(0)) ||
-            !CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.row(0)))
+        // Define model function (the kernel density only, without normalization constant)
+        auto model_fun = [this](const VectorXADd &x)
         {
-            throw std::runtime_error("Dimensions of parameter vectors/matrices do not match.");
-        }
+            VectorXADd result(1), diff = x - this->model_parameters_[0].cast<CppAD::AD<double>>();
+            result << (-0.5 * (diff.transpose() * this->model_parameters_[1].cast<CppAD::AD<double>>().inverse() * diff).array()).exp();
+            return result;
+        };
 
-        mean_vec_ad_ = mean.cast<CppAD::AD<double>>();
-        cov_mat_ad_ = covariance.cast<CppAD::AD<double>>();
-
-        // Compute the normalization constant based on the updated parameters
-        ComputeNormalizationConstant();
-
-        Initialize();
+        UpdateModel(model_fun);
     }
 
-protected:
-    VectorXADd ModelFun(const VectorXADd &x) const override
-    {
-        VectorXADd diff = x - model_parameters_[0].cast<CppAD::AD<double>>();
-        return (-0.5 * (diff.transpose() * model_parameters_[1].cast<CppAD::AD<double>>().inverse() * diff).array()).exp();
-    }
+    /* and so on */
 };
 ```
+Method 2b: override `EvaluateModel*` and/or `EvaluateLogModel*` directly if you don't need automatic differentiation AND if you don't intend to compose new models from these derived models. This is because functional composition (e.g., obj1+obj2, obj1*obj2) utilize the `ModelFun` method of the respective `Model` objects; overriding the `Evaluate*` methods directly means combining the `nullptr`s of both `model_fun_` variables.

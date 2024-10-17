@@ -12,5 +12,6 @@
 
 #include "SVGDCpp/Model/Model.hpp"
 #include "SVGDCpp/Model/MultivariateNormal.hpp"
+#include "SVGDCpp/Model/BinomialLikelihood.hpp"
 
 #endif

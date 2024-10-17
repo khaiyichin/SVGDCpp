@@ -15,12 +15,13 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <cppad/cppad.hpp>
-#include <exception>
 #include <type_traits>
 #include <memory>
 #include <numeric>
 #include <cmath>
 #include <utility>
+
+#include "Exceptions.hpp"
 
 /**
  * @brief Alias for variable-sized Eigen vector of type CppAD::AD<double>.

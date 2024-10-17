@@ -14,5 +14,6 @@
 
 #include "SVGDCpp/Core.hpp"
 #include "SVGDCpp/SVGD.hpp"
+#include "SVGDCpp/Exceptions.hpp"
 
 #endif

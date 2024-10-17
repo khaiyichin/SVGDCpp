@@ -33,7 +33,7 @@ public:
     /**
      * @brief Construct a new Model object by deep copying variables from another Model object.
      *
-     * @param obj
+     * @param obj Model object to be copied.
      */
     Model(const Model &obj)
     {
@@ -44,7 +44,7 @@ public:
      * @brief Construct a new Model object.
      * @details This is the preferred method to instantiate a Model class if no derived classed from Model is used.
      *
-     * @param dim
+     * @param dim Dimension of the problem, i.e., dimension of the particle coordinates.
      */
     Model(const size_t &dim) : dimension_(dim) {}
 
@@ -57,9 +57,14 @@ public:
     Model operator+(const Model &obj)
     {
         // Ensure that dimensions are correct
-        if (this->dimension_ != obj.dimension_)
+        if (dimension_ != obj.dimension_)
         {
-            throw std::runtime_error("SVGDCpp: Only models with the same variable dimensions can be added.");
+            throw DimensionMismatchException("Only models with the same variable dimensions can be added.");
+        }
+
+        if (!model_fun_ || !obj.model_fun_)
+        {
+            throw UnsetException("One of the model functions is unset; functional composition requires both model functions to be set.");
         }
 
         // Define the sum of two models
@@ -70,7 +75,7 @@ public:
             return result;
         };
 
-        Model new_obj(this->dimension_);
+        Model new_obj(dimension_);
         new_obj.model_parameters_ = model_parameters_;
         new_obj.model_parameters_.insert(
             new_obj.model_parameters_.end(),
@@ -90,9 +95,14 @@ public:
     Model operator*(const Model &obj)
     {
         // Ensure that dimensions are correct
-        if (this->dimension_ != obj.dimension_)
+        if (dimension_ != obj.dimension_)
         {
-            throw std::runtime_error("SVGDCpp: Only models with the same variable dimensions can be multiplied.");
+            throw DimensionMismatchException("Only models with the same variable dimensions can be multiplied.");
+        }
+
+        if (!model_fun_ || !obj.model_fun_)
+        {
+            throw UnsetException("One of the model functions is unset; functional composition requires both model functions to be set.");
         }
 
         // Define the product of two models
@@ -103,7 +113,7 @@ public:
             return result;
         };
 
-        Model new_obj(this->dimension_);
+        Model new_obj(dimension_);
         new_obj.model_parameters_ = model_parameters_;
         new_obj.model_parameters_.insert(
             new_obj.model_parameters_.end(),
@@ -135,6 +145,13 @@ public:
      */
     virtual void Initialize()
     {
+        // Ensure that the dimension has been set properly
+        if (dimension_ <= 0)
+        {
+            throw UnsetException("Model dimension is improperly or not set (" + std::to_string(dimension_) + ").");
+        }
+
+        // Set up the CppAD functions
         SetupADFun();
     }
 
@@ -237,6 +254,15 @@ public:
      */
     virtual void UpdateParameters(const std::vector<Eigen::MatrixXd> &params)
     {
+        // Verify that the parameters all have # rows == dimension_
+        for (const auto &param : params)
+        {
+            if (param.rows() != dimension_)
+            {
+                throw DimensionMismatchException("Dimension mismatch between provided parameters and dimension_ (" + std::to_string(dimension_) + ").");
+            }
+        }
+
         model_parameters_ = params;
 
         Initialize();
@@ -273,8 +299,14 @@ protected:
      * @param x Argument that the model is evaluated at (the independent variable).
      * @return Output of the model function (the dependent variable).
      */
-    virtual VectorXADd ModelFun(const VectorXADd &x) const
+    VectorXADd ModelFun(const VectorXADd &x) const
     {
+        // Ensure that the model function has been set
+        if (!model_fun_)
+        {
+            throw UnsetException("Model function is unset.");
+        }
+
         return model_fun_(x);
     }
 
@@ -289,7 +321,7 @@ protected:
         return ModelFun(x).array().log();
     }
 
-    size_t dimension_; ///< Dimension of the particle coordinates.
+    size_t dimension_ = -1; ///< Dimension of the particle coordinates.
 
     std::vector<Eigen::MatrixXd> model_parameters_; ///< Parameters of the model function.
 

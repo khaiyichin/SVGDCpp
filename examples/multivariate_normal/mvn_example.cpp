@@ -1,8 +1,8 @@
 #include <iostream>
-#include <SVGDCpp/Core>
-#include <SVGDCpp/Kernel>
-#include <SVGDCpp/Model>
-#include <SVGDCpp/Optimizer>
+#include "Core"
+#include "Model"
+#include "Kernel"
+#include "Optimizer"
 
 int main()
 {

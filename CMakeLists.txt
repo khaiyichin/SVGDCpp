@@ -1,37 +1,58 @@
 cmake_minimum_required(VERSION 3.15)
 project(SVGDCpp)
 
+add_compile_options(-Wall -Wextra -Wpedantic)
+
 set(CMAKE_CXX_STANDARD 17)
 
 # Define variables
 set(SVGDCPP_CMAKE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/cmake")
 set(SVGDCPP_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}") # assign include destination to variable
 set(API_DOCUMENTATION_DIR ${CMAKE_INSTALL_PREFIX}/doc/${PROJECT_NAME})
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+endif()
 
-# Build and install API documentation
+# Define Release build options
 if(CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_CONFIGURATION_TYPES MATCHES Release)
-    find_package(Doxygen)
 
-    if(DOXYGEN_FOUND)
-        set(DOXYGEN_IN doc/Doxyfile.in)
-        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+    # Check to build documentation
+    if(BUILD_DOCUMENTATION)
+        find_package(Doxygen)
 
-        # Configure the file
-        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-        message(STATUS "Doxygen build started")
+        if(DOXYGEN_FOUND)
+            set(DOXYGEN_IN doc/Doxyfile.in)
+            set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-        # Build doxygen documentation
-        add_custom_target(Doxygen_documentation ALL
-            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            COMMENT "Generating API documentation with Doxygen" VERBATIM
-        )
+            # Configure the file
+            configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+            message(STATUS "Doxygen build started")
 
-        # Install built documentation
-        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/html DESTINATION ${API_DOCUMENTATION_DIR})
-    else()
-        message(WARNING "Doxygen need to be installed to generate the doxygen documentation")
+            # Build doxygen documentation
+            add_custom_target(Doxygen_documentation ALL
+                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMENT "Generating API documentation with Doxygen" VERBATIM
+            )
+
+            # Install built documentation
+            install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/html DESTINATION ${API_DOCUMENTATION_DIR})
+        else()
+            message(WARNING "Doxygen need to be installed to generate the doxygen documentation")
+        endif()
     endif()
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_CONFIGURATION_TYPES MATCHES Debug)
+    # Build tests
+    enable_testing()
+    add_subdirectory(tests)
+
+endif()
+
+# Check to build examples
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 
 # Build library
@@ -89,6 +110,3 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
     DESTINATION "${SVGDCPP_CMAKE_INSTALL_DIR}"
 )
-
-# Install examples
-add_subdirectory(examples)

@@ -44,7 +44,7 @@ public:
         if (!CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.col(0)) ||
             !CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.row(0)))
         {
-            throw std::runtime_error("SVGDCpp: Dimensions of parameter vectors/matrices do not match.");
+            throw DimensionMismatchException("Dimensions of parameter vectors/matrices do not match.");
         }
 
         // Store parameters
@@ -53,6 +53,16 @@ public:
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormalizationConstant();
+
+        // Define model function (the kernel density only, without normalization constant)
+        auto model_fun = [this](const VectorXADd &x)
+        {
+            VectorXADd result(1), diff = x - model_parameters_[0].cast<CppAD::AD<double>>();
+            result << (-0.5 * (diff.transpose() * model_parameters_[1].cast<CppAD::AD<double>>().inverse() * diff).array()).exp();
+            return result;
+        };
+
+        UpdateModel(model_fun);
     }
 
     /**
@@ -74,7 +84,7 @@ public:
 
     /**
      * @brief Update the model parameters.
-     * @details This method is overridden to provide some safeguards but is otherise identical to @ref Model::UpdateParameters.
+     * @details This method is overridden to provide some safeguards but is otherwise identical to @ref Model::UpdateParameters.
      * @param params Vector of variable-sized Eigen objects.
      */
     void UpdateParameters(const std::vector<Eigen::MatrixXd> &params) override
@@ -86,11 +96,11 @@ public:
         if (!CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.col(0)) ||
             !CompareVectorSizes<Eigen::VectorXd, Eigen::VectorXd>(mean, covariance.row(0)))
         {
-            throw std::runtime_error("SVGDCpp: Dimensions of parameter vectors/matrices do not match.");
+            throw DimensionMismatchException("Dimensions of parameter vectors/matrices do not match each other (# of rows must be equal).");
         }
         else if (mean.rows() != dimension_)
         {
-            throw std::runtime_error("SVGDCpp: Dimensions of parameter vectors/matrices do not match original dimension.");
+            throw DimensionMismatchException("Dimensions of parameter vectors/matrices do not match original dimension.");
         }
 
         model_parameters_[0] = mean;
@@ -143,19 +153,6 @@ public:
     double GetNormalizationConstant() { return norm_const_; }
 
 protected:
-    /**
-     * @brief Symbolic function of the multivariate normal PDF.
-     * @details This symbolic function is not normalized.
-     * @param x Argument that the model is evaluated at (the independent variable).
-     * @return Output of the model function (the dependent variable).
-     */
-    VectorXADd ModelFun(const VectorXADd &x) const override
-    {
-        VectorXADd result(1), diff = x - model_parameters_[0].cast<CppAD::AD<double>>();
-        result << (-0.5 * (diff.transpose() * model_parameters_[1].cast<CppAD::AD<double>>().inverse() * diff).array()).exp();
-        return result;
-    }
-
     /**
      * @brief Compute the normalization constant for the multivariate normal.
      *

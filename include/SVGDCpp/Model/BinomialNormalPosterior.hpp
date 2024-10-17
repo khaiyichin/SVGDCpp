@@ -20,11 +20,11 @@ public:
         // Check whether parameters are reasonable
         if (n > t)
         {
-            throw std::runtime_error("SVGDCpp: Parameter n should be at most equal to parameter t.");
+            throw std::invalid_argument("SVGDCpp: [Argument Error] Parameter n should be at most equal to parameter t.");
         }
         else if (n < 0 || t <= 0)
         {
-            throw std::runtime_error("SVGDCpp: Parameter n should be > 0 and/or parameter t should be non-negative.");
+            throw std::invalid_argument("SVGDCpp: [Argument Error] Parameter n should be > 0 and/or parameter t should be non-negative.");
         }
 
         model_parameters_[0] = (Eigen::Matrix<int, 1, 1>() << n).finished();
