@@ -52,4 +52,28 @@ bool CompareVectorSizes(const T1 &a, const T2 &b)
     return (a.rows() == b.rows());
 }
 
+/**
+ * @brief Convert a regular matrix of type double to a CppAD::AD<double> type matrix.
+ *
+ * @param eigen_mat Dynamic matrix of type double.
+ * @return The input matrix but of Cpp::AD<double> type.
+ */
+MatrixXADd ConvertToCppAD(const Eigen::MatrixXd &eigen_mat)
+{
+    return eigen_mat.unaryExpr([](const double &value)
+                               { return CppAD::Var2Par(CppAD::AD<double>(value)); });
+}
+
+/**
+ * @brief Convert a CppAD::AD<double> type matrix to a regular matrix of type double.
+ *
+ * @param cppad_mat Dynamic matrix of type CppAD::AD<double>.
+ * @return The input matrix but of double type.
+ */
+Eigen::MatrixXd ConvertFromCppAD(const MatrixXADd &cppad_mat)
+{
+    return cppad_mat.unaryExpr([](const CppAD::AD<double> &value)
+                               { return CppAD::Value(value); });
+}
+
 #endif

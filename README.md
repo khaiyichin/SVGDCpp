@@ -1,13 +1,16 @@
-# SVGDCpp: A C++ implementation of SVGD
+# SVGDCpp: An SVGD library in C++
 
 WORK-IN-PROGRESS
 
 install eigen: from source or apt install libeigen3-dev
+doxygen required for BUILD_DOCUMENTATION=TRUE (FALSE by default)
+to build tests you need BUILD_TESTS=TRUE (FALSE by default)
+to build examples you need BUILD_EXAMPLES=TRUE (FALSE by default)
 configure cppad with the `-D cppad_testvector=eigen`, `include_eigen=true`, and `-D CMAKE_BUILD_TYPE=Release` flags
 
 
 TODO:
-- figure out how to incorporate model_parameters_ into AD function
+- figure out how to incorporate model_parameters_ into AD function == `UpdateParameters` and `ModelFun` will do that now
 - figure out whether a parameter can be changed and differentiation will still happen without `SetupADFun()` == no it doesn't update, so differentiation happens wrt to old variable
 
 ## How to use as part of CMake projects?
@@ -39,7 +42,7 @@ Method 1: using the Kernel or Model class directly. This is useful if you want t
 ```cpp
 
 // Create 2 models, f1 = a1 * x and f2 = a2 + exp(b * x)
-std::function<VectorXADd(const VectorXADd &x)> model_fun1 = [](const VectorXADd &x)
+std::function<VectorXADd(const VectorXADd &x, const std::vector<MatrixXADd> &params)> model_fun1 = [](const VectorXADd &x, const std::vector<MatrixXADd> &params)
     {
         Eigen::VectorXd mean(2);
         mean << 1,1;
@@ -68,9 +71,11 @@ model1.Initialize();
 model2.Initialize();
 combined.Initialize();
 ```
+NOTE: `UpdateModel` must be done before `UpdateParameters` can be executed in this case
+
 
 (if you need automatic differentiation and want to write your own derived class)
-Method 2: create a derived class from Kernel or Model (if you need automatic differentiation and want to write your own derived class). (NOT RECOMMENDED TO MANUALLY OVERRIDE `ModelFun`; create a `std::function` and feed into `UpdateModel` instead. This is because overriding `ModelFun` directly means the class silently removes the ability to update the model using `UpdateModel`) (I may remove the `virtual` keyword from the base class)
+Method 2: create a derived class from Kernel or Model (if you need automatic differentiation and want to write your own derived class). (NOT RECOMMENDED TO MANUALLY OVERRIDE `ModelFun`; create a `std::function` and feed into `UpdateModel` instead. This is because overriding `ModelFun` directly means the class silently removes the ability to update the model using `UpdateModel`)
 ```cpp
 
 class MultivariateNormal : public Model
@@ -108,4 +113,5 @@ public:
     /* and so on */
 };
 ```
-Method 2b: override `EvaluateModel*` and/or `EvaluateLogModel*` directly if you don't need automatic differentiation AND if you don't intend to compose new models from these derived models. This is because functional composition (e.g., obj1+obj2, obj1*obj2) utilize the `ModelFun` method of the respective `Model` objects; overriding the `Evaluate*` methods directly means combining the `nullptr`s of both `model_fun_` variables.
+Method 2b (advanced usage): override `EvaluateModel*` and/or `EvaluateLogModel*` directly if you don't need automatic differentiation AND if you don't intend to compose new models from these derived models. This is because functional composition (e.g., obj1+obj2, obj1*obj2) utilize the `ModelFun` method of the respective `Model` objects; overriding the `Evaluate*` methods directly means combining the `nullptr`s of both `model_fun_` variables. THIS IS USEFUL IF YOU CAN PROVIDE CLOSED-FORM FUNCTIONS BECAUSE IT PROVIDES SOME OPTIMIZATION (THOUGH I'M NOT SURE BY HOW MUCH).
+

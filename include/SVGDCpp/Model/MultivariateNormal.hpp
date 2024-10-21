@@ -48,17 +48,17 @@ public:
         }
 
         // Store parameters
-        model_parameters_.push_back(mean);
-        model_parameters_.push_back(covariance);
+        model_parameters_.push_back(ConvertToCppAD(mean));
+        model_parameters_.push_back(ConvertToCppAD(covariance));
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormalizationConstant();
 
         // Define model function (the kernel density only, without normalization constant)
-        auto model_fun = [this](const VectorXADd &x)
+        auto model_fun = [this](const VectorXADd &x, const std::vector<MatrixXADd> &params)
         {
-            VectorXADd result(1), diff = x - model_parameters_[0].cast<CppAD::AD<double>>();
-            result << (-0.5 * (diff.transpose() * model_parameters_[1].cast<CppAD::AD<double>>().inverse() * diff).array()).exp();
+            VectorXADd result(1), diff = x - params[0];
+            result << (-0.5 * (diff.transpose() * params[1].inverse() * diff).array()).exp();
             return result;
         };
 
@@ -109,8 +109,8 @@ public:
             throw DimensionMismatchException("Dimensions of parameter vectors/matrices do not match original dimension.");
         }
 
-        model_parameters_[0] = mean;
-        model_parameters_[1] = covariance;
+        model_parameters_[0] = ConvertToCppAD(mean);
+        model_parameters_[1] = ConvertToCppAD(covariance);
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormalizationConstant();
@@ -166,7 +166,7 @@ protected:
     void ComputeNormalizationConstant()
     {
         norm_const_ = 1.0 /
-                      (std::pow(2.0 * M_PI, dimension_ / 2.0) * std::sqrt(model_parameters_[1].determinant()));
+                      (std::pow(2.0 * M_PI, dimension_ / 2.0) * std::sqrt(ConvertFromCppAD(model_parameters_[1]).determinant()));
     }
 
     double norm_const_; ///< Normalization constant.

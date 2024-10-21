@@ -31,7 +31,7 @@ public:
      * @brief Default destructor.
      *
      */
-    virtual ~Kernel(){};
+    virtual ~Kernel() {}
 
     /**
      * @brief Copy constructor.
@@ -67,17 +67,26 @@ public:
             throw UnsetException("One of the kernel functions is unset; functional composition requires both kernel functions to be set.");
         }
 
-        auto sum_kernel_fun = [this, &obj](const VectorXADd &x)
-        {
-            return VectorXADd(this->KernelFun(x).array() + obj.KernelFun(x).array());
-        };
-
+        // Create new object and combine kernel parameters
         Kernel new_obj(this->dimension_);
         new_obj.kernel_parameters_ = kernel_parameters_;
         new_obj.kernel_parameters_.insert(
             new_obj.kernel_parameters_.end(),
             obj.kernel_parameters_.begin(),
             obj.kernel_parameters_.end());
+
+        // Define the sum of two kernels
+        auto sum_kernel_fun = [this, &obj](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        {
+            // Split the parameters
+            std::vector<MatrixXADd> params_1(params.begin(), params.begin() + this->kernel_parameters_.size());
+            std::vector<MatrixXADd> params_2(params.begin() + this->kernel_parameters_.size(), params.end());
+
+            VectorXADd result(1);
+            result << this->KernelFun(x, params_1).array() + obj.KernelFun(x, params_2).array();
+            return result;
+        };
+
         new_obj.UpdateKernel(sum_kernel_fun);
 
         return new_obj;
@@ -102,17 +111,26 @@ public:
             throw UnsetException("One of the kernel functions is unset; functional composition requires both kernel functions to be set.");
         }
 
-        auto product_kernel_fun = [this, &obj](const VectorXADd &x)
-        {
-            return VectorXADd(this->KernelFun(x).array() * obj.KernelFun(x).array());
-        };
-
-        Kernel new_obj(this->dimension_);
+        // Define new object and combine kernel parameters
+        Kernel new_obj(dimension_);
         new_obj.kernel_parameters_ = kernel_parameters_;
         new_obj.kernel_parameters_.insert(
             new_obj.kernel_parameters_.end(),
             obj.kernel_parameters_.begin(),
             obj.kernel_parameters_.end());
+
+        // Define the product of two kernels
+        auto product_kernel_fun = [this, &obj](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        {
+            // Split the parameters
+            std::vector<MatrixXADd> params_1(params.begin(), params.begin() + this->kernel_parameters_.size());
+            std::vector<MatrixXADd> params_2(params.begin() + this->kernel_parameters_.size(), params.end());
+
+            VectorXADd result(1);
+            result << this->KernelFun(x, params_1).array() * obj.KernelFun(x, params_2).array();
+            return result;
+        };
+
         new_obj.UpdateKernel(product_kernel_fun);
 
         return new_obj;
@@ -179,7 +197,23 @@ public:
      */
     virtual void UpdateParameters(const std::vector<Eigen::MatrixXd> &params)
     {
-        kernel_parameters_ = params;
+        std::vector<MatrixXADd> converted_params(params.size());
+
+        // Verify that the parameters all have # rows == dimension_
+        for (size_t i = 0; i < params.size(); ++i)
+        {
+            if (params[i].rows() != dimension_)
+            {
+                throw DimensionMismatchException("Dimension mismatch between provided parameters and model dimension (" + std::to_string(params[i].rows()) + " vs. " + std::to_string(dimension_) + ").");
+            }
+
+            // Convert into CppAD::AD<double> type
+            converted_params[i] = ConvertToCppAD(params[i]);
+        }
+
+        kernel_parameters_ = converted_params;
+
+        Initialize();
     };
 
     /**
@@ -189,7 +223,7 @@ public:
      */
     virtual void UpdateLocation(const Eigen::VectorXd &x)
     {
-        location_vec_ad_ = x.cast<CppAD::AD<double>>();
+        location_vec_ad_ = ConvertToCppAD(x);
 
         Initialize();
     }
@@ -199,7 +233,18 @@ public:
      *
      * @return Vector of variable-sized objects.
      */
-    std::vector<Eigen::MatrixXd> GetParameters() const { return kernel_parameters_; }
+    std::vector<Eigen::MatrixXd> GetParameters() const
+    {
+        std::vector<Eigen::MatrixXd> converted_params(kernel_parameters_.size());
+
+        for (size_t i = 0; i < kernel_parameters_.size(); ++i)
+        {
+            // Convert to double type
+            converted_params[i] = ConvertFromCppAD(kernel_parameters_[i]);
+        }
+
+        return converted_params;
+    }
 
     /**
      * @brief Execute methods required for each step.
@@ -212,9 +257,9 @@ public:
     /**
      * @brief Update the kernel symbolic function.
      *
-     * @param kernel_fun STL function defining the kernel function. The function argument should be a `const &` @ref VectorXADd and return a @ref VectorXADd.
+     * @param kernel_fun STL function defining the kernel function. The function argument should be a `const &` @ref VectorXADd and a `const &` @ref MatrixXADd vector; it returns a @ref VectorXADd.
      */
-    void UpdateKernel(std::function<VectorXADd(const VectorXADd &)> kernel_fun)
+    void UpdateKernel(std::function<VectorXADd(const VectorXADd &, const std::vector<MatrixXADd> &)> kernel_fun)
     {
         kernel_fun_ = kernel_fun;
     }
@@ -224,18 +269,25 @@ protected:
      * @brief Symbolic function of the kernel, used by CppAD to compute derivatives.
      *
      * @param x Argument that the kernel is evaluated at (the independent variable).
+     * @param params Parameters of the model function.
      * @return Output of the kernel function (the dependent variable).
      */
-    virtual VectorXADd KernelFun(const VectorXADd &x) const
+    virtual VectorXADd KernelFun(const VectorXADd &x, const std::vector<MatrixXADd> &params) const
     {
-        return kernel_fun_(x);
+        // Ensure that the kernel function has been set
+        if (!kernel_fun_)
+        {
+            throw UnsetException("Kernel function is unset.");
+        }
+
+        return kernel_fun_(x, params);
     }
 
     int dimension_ = -1; ///< Dimension of the particle coordinates.
 
     VectorXADd location_vec_ad_; ///< Location at which the kernel is evaluated with respect to.
 
-    std::vector<Eigen::MatrixXd> kernel_parameters_; ///< Parameters of the kernel function.
+    std::vector<MatrixXADd> kernel_parameters_; ///< Parameters of the kernel function.
 
 private:
     /**
@@ -249,7 +301,7 @@ private:
         // Setup kernel
         CppAD::Independent(x_kernel_ad); // start recording sequence
 
-        y_kernel_ad = KernelFun(x_kernel_ad);
+        y_kernel_ad = KernelFun(x_kernel_ad, kernel_parameters_);
 
         kernel_fun_ad_.Dependent(x_kernel_ad, y_kernel_ad); // store operation sequence and stop recording
 
@@ -259,7 +311,7 @@ private:
         // kernel_fun_ad_.optimize();
     }
 
-    std::function<VectorXADd(const VectorXADd &)> kernel_fun_; ///< Symbolic function of the kernel.
+    std::function<VectorXADd(const VectorXADd &, const std::vector<MatrixXADd> &)> kernel_fun_; ///< Symbolic function of the kernel.
 
     CppAD::ADFun<double> kernel_fun_ad_; ///< CppAD function of the kernel.
 };

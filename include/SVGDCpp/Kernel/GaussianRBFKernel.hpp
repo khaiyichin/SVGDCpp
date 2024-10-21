@@ -71,7 +71,7 @@ public:
         squared_pairwise_dist_matrix_.resize(coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());
 
         // Setup kernel function
-        std::function<VectorXADd(const VectorXADd &x)> kernel_fun = [this](const VectorXADd &x)
+        std::function<VectorXADd(const VectorXADd &, const std::vector<MatrixXADd> &)> kernel_fun = [this](const VectorXADd &x, const std::vector<MatrixXADd> &params)
         {
             VectorXADd result(1), diff = x - location_vec_ad_;
             result << (-diff.transpose() * inverse_scale_mat_ad_ * diff).array().exp();
@@ -133,7 +133,7 @@ public:
      */
     void UpdateLocation(const Eigen::VectorXd &x) override
     {
-        location_vec_ad_ = x.cast<CppAD::AD<double>>();
+        location_vec_ad_ = ConvertToCppAD(x);
 
         Kernel::Initialize(); // use the base class Initialize so that we don't compute scale everytime
     }
@@ -149,19 +149,6 @@ public:
     }
 
 protected:
-    /**
-     * @brief Symbolic function of the Gaussian RBF kernel.
-     *
-     * @param x Argument that the kernel is evaluated at (the independent variable).
-     * @return Output of the kernel function (the dependent variable).
-     */
-    VectorXADd KernelFun(const VectorXADd &x) const override
-    {
-        VectorXADd result(1), diff = x - location_vec_ad_;
-        result << (-diff.transpose() * inverse_scale_mat_ad_ * diff).array().exp();
-        return result;
-    }
-
     /**
      * @brief Compute the scale parameter of the kernel.
      *
@@ -217,7 +204,7 @@ protected:
                 hessian_sum += -target_model_ptr_->EvaluateLogModelHessian(coord_matrix_ptr_->col(i));
             }
 
-            inverse_scale_mat_ad_ = (1.0 / (2.0 * dimension_ * coord_matrix_ptr_->cols()) * hessian_sum).cast<CppAD::AD<double>>();
+            inverse_scale_mat_ad_ = ConvertToCppAD(1.0 / (2.0 * dimension_ * coord_matrix_ptr_->cols()) * hessian_sum);
 
             break;
         }
