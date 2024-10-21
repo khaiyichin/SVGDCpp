@@ -70,15 +70,24 @@ public:
         squared_coord_matrix_.resize(coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());
         squared_pairwise_dist_matrix_.resize(coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());
 
+        kernel_parameters_.resize(1); // we use only the inverse matrix as the kernel parameter;
+                                      // this can be optimized away if you don't intend to compose kernels from this class
+
         // Setup kernel function
         std::function<VectorXADd(const VectorXADd &, const std::vector<MatrixXADd> &)> kernel_fun = [this](const VectorXADd &x, const std::vector<MatrixXADd> &params)
         {
             VectorXADd result(1), diff = x - location_vec_ad_;
-            result << (-diff.transpose() * inverse_scale_mat_ad_ * diff).array().exp();
+            result << (-diff.transpose() * params[0] * diff).array().exp();
             return result;
         };
 
+        // Compute initial scale
+        UpdateParameters({ComputeScale()}); // compute the initial scale
+
+        // Update kernel function and initialize
         UpdateKernel(kernel_fun);
+
+        Initialize();
     }
 
     /**
@@ -92,7 +101,6 @@ public:
      */
     GaussianRBFKernel &operator=(const GaussianRBFKernel &obj)
     {
-        inverse_scale_mat_ad_ = obj.inverse_scale_mat_ad_;
         scale_method_ = obj.scale_method_;
         coord_matrix_ptr_ = obj.coord_matrix_ptr_;
         target_model_ptr_ = obj.target_model_ptr_;
@@ -109,51 +117,34 @@ public:
     GaussianRBFKernel &operator=(const Kernel &obj) = delete;
 
     /**
-     * @brief Initialize the kernel.
-     *
-     * @details This is called by the @ref SVGD::Initialize method.
-     * Internally this calculates the scale, then calls the base @ref Kernel::Initialize method.
-     * This should be called if the kernel's function has been updated using @ref UpdateKernel.
-     *
-     */
-    void Initialize() override
-    {
-        ComputeScale();
-
-        Kernel::Initialize();
-    }
-
-    /**
-     * @brief Update the particle location which the kernel is computed with respect to.
-     *
-     * @details An override is provided to avoid calling the derived class's @ref Initialize function,
-     * which recalculates the scale.
-     *
-     * @param x Variable-sized Eigen vector.
-     */
-    void UpdateLocation(const Eigen::VectorXd &x) override
-    {
-        location_vec_ad_ = ConvertToCppAD(x);
-
-        Kernel::Initialize(); // use the base class Initialize so that we don't compute scale everytime
-    }
-
-    /**
      * @brief Execute methods required for each step of the SVGD.
      *
      * @details An override is provided to compute the scale each time this is called.
      */
     void Step() override
     {
-        ComputeScale();
+        // Assign the same inverse scale matrix to each kernel parameter (will only have > 1 element if this is a composed kernel instance)
+        Eigen::MatrixXd inv_scale_mat = ComputeScale();
+
+        std::vector<Eigen::MatrixXd> params(kernel_parameters_.size());
+
+        for (auto &param : params)
+        {
+            param = inv_scale_mat;
+        }
+
+        UpdateParameters(params);
+
+        Initialize();
     }
 
 protected:
     /**
      * @brief Compute the scale parameter of the kernel.
      *
+     * @return The computed inverse scale matrix.
      */
-    void ComputeScale()
+    Eigen::MatrixXd ComputeScale()
     {
         switch (scale_method_)
         {
@@ -176,11 +167,7 @@ protected:
 
             pairwise_dist_vec_ = Eigen::Map<Eigen::RowVectorXd>(squared_pairwise_dist_matrix_.data(), coord_matrix_ptr_->cols() * coord_matrix_ptr_->cols()).array().sqrt();
 
-            // Compute the scale
-            inverse_scale_mat_ad_ =
-                std::log(coord_matrix_ptr_->cols()) / std::pow(ComputeMedian(pairwise_dist_vec_), 2) * MatrixXADd::Identity(dimension_, dimension_);
-
-            break;
+            return std::log(coord_matrix_ptr_->cols()) / std::pow(ComputeMedian(pairwise_dist_vec_), 2) * Eigen::MatrixXd::Identity(dimension_, dimension_);
         }
         case ScaleMethod::Hessian:
         {
@@ -192,8 +179,6 @@ protected:
                 For this method, (*coord_matrix_ptr_) should contain the m-dimensional coordinates of n particles as an (m x n) matrix
             */
 
-            target_model_ptr_->Initialize();
-
             // Sum the hessians based on all of the particles' positions
             Eigen::MatrixXd hessian_sum(dimension_, dimension_);
 
@@ -204,10 +189,10 @@ protected:
                 hessian_sum += -target_model_ptr_->EvaluateLogModelHessian(coord_matrix_ptr_->col(i));
             }
 
-            inverse_scale_mat_ad_ = ConvertToCppAD(1.0 / (2.0 * dimension_ * coord_matrix_ptr_->cols()) * hessian_sum);
-
-            break;
+            return 1.0 / (2.0 * dimension_ * coord_matrix_ptr_->cols()) * hessian_sum;
         }
+        default:
+            throw std::invalid_argument("SVGDCpp: [Argument error] Invalid scale method Enum provided.");
         }
     }
 
@@ -258,8 +243,6 @@ protected:
     Eigen::MatrixXd replicated_diag_matrix_; ///< Replicated diagonal matrix.
 
     Eigen::RowVectorXd pairwise_dist_vec_; ///< Pairwise distance row vector.
-
-    MatrixXADd inverse_scale_mat_ad_; ///< Inverse scale matrix.
 
     ScaleMethod scale_method_; ///< Method used to compute the scale.
 

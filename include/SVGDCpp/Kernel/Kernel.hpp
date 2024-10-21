@@ -89,6 +89,54 @@ public:
 
         new_obj.UpdateKernel(sum_kernel_fun);
 
+        Initialize();
+
+        return new_obj;
+    }
+
+    /**
+     * @brief Subtract `*this` by @a obj to produce a new @ref Kernel object.
+     *
+     * @param obj Another parametrized @ref Kernel object.
+     * @return A new @ref Kernel object whose function is the difference of `*this` and @a obj functions.
+     */
+    Kernel operator-(const Kernel &obj)
+    {
+        // Ensure that dimensions are correct
+        if (dimension_ != obj.dimension_)
+        {
+            throw DimensionMismatchException("Only kernels with the same variable dimensions can be added.");
+        }
+
+        if (!kernel_fun_ || !obj.kernel_fun_)
+        {
+            throw UnsetException("One of the kernel functions is unset; functional composition requires both kernel functions to be set.");
+        }
+
+        // Create new object and combine kernel parameters
+        Kernel new_obj(this->dimension_);
+        new_obj.kernel_parameters_ = kernel_parameters_;
+        new_obj.kernel_parameters_.insert(
+            new_obj.kernel_parameters_.end(),
+            obj.kernel_parameters_.begin(),
+            obj.kernel_parameters_.end());
+
+        // Define the difference of two kernels
+        auto difference_kernel_fun = [this, &obj](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        {
+            // Split the parameters
+            std::vector<MatrixXADd> params_1(params.begin(), params.begin() + this->kernel_parameters_.size());
+            std::vector<MatrixXADd> params_2(params.begin() + this->kernel_parameters_.size(), params.end());
+
+            VectorXADd result(1);
+            result << this->KernelFun(x, params_1).array() - obj.KernelFun(x, params_2).array();
+            return result;
+        };
+
+        new_obj.UpdateKernel(difference_kernel_fun);
+
+        Initialize();
+
         return new_obj;
     }
 
@@ -96,7 +144,7 @@ public:
      * @brief Multiply `*this` with @a obj to produce a new @ref Kernel object.
      *
      * @param obj Another parametrized @ref Kernel object.
-     * @return A new @ref Kernel object whose function is the sum of `*this` and @a obj functions.
+     * @return A new @ref Kernel object whose function is the product of `*this` and @a obj functions.
      */
     Kernel operator*(const Kernel &obj)
     {
@@ -119,7 +167,7 @@ public:
             obj.kernel_parameters_.begin(),
             obj.kernel_parameters_.end());
 
-        // Define the product of two kernels
+        // Define the quotient of two kernels
         auto product_kernel_fun = [this, &obj](const VectorXADd &x, const std::vector<MatrixXADd> &params)
         {
             // Split the parameters
@@ -132,6 +180,54 @@ public:
         };
 
         new_obj.UpdateKernel(product_kernel_fun);
+
+        Initialize();
+
+        return new_obj;
+    }
+
+    /**
+     * @brief Multiply `*this` by @a obj to produce a new @ref Kernel object.
+     *
+     * @param obj Another parametrized @ref Kernel object.
+     * @return A new @ref Kernel object whose function is the quotient of `*this` and @a obj functions.
+     */
+    Kernel operator/(const Kernel &obj)
+    {
+        // Ensure that dimensions are correct
+        if (dimension_ != obj.dimension_)
+        {
+            throw DimensionMismatchException("Only kernels with the same variable dimensions can be multiplied.");
+        }
+
+        if (!kernel_fun_ || !obj.kernel_fun_)
+        {
+            throw UnsetException("One of the kernel functions is unset; functional composition requires both kernel functions to be set.");
+        }
+
+        // Define new object and combine kernel parameters
+        Kernel new_obj(dimension_);
+        new_obj.kernel_parameters_ = kernel_parameters_;
+        new_obj.kernel_parameters_.insert(
+            new_obj.kernel_parameters_.end(),
+            obj.kernel_parameters_.begin(),
+            obj.kernel_parameters_.end());
+
+        // Define the quotient of two kernels
+        auto quotient_kernel_fun = [this, &obj](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        {
+            // Split the parameters
+            std::vector<MatrixXADd> params_1(params.begin(), params.begin() + this->kernel_parameters_.size());
+            std::vector<MatrixXADd> params_2(params.begin() + this->kernel_parameters_.size(), params.end());
+
+            VectorXADd result(1);
+            result << this->KernelFun(x, params_1).array() / obj.KernelFun(x, params_2).array();
+            return result;
+        };
+
+        new_obj.UpdateKernel(quotient_kernel_fun);
+
+        Initialize();
 
         return new_obj;
     }
@@ -212,8 +308,6 @@ public:
         }
 
         kernel_parameters_ = converted_params;
-
-        Initialize();
     };
 
     /**
@@ -224,8 +318,6 @@ public:
     virtual void UpdateLocation(const Eigen::VectorXd &x)
     {
         location_vec_ad_ = ConvertToCppAD(x);
-
-        Initialize();
     }
 
     /**

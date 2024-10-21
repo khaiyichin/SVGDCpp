@@ -33,6 +33,40 @@ Then in source code:
 #include <SVGDCpp/Optimizer>
 ```
 
+WARNING: anytime an `Update*` method is called _manually_, the instance's `Initialize()` function must be called before the scope ends. E.g.,
+```
+// Okay
+{
+    Model m;
+    m.UpdateModel(some_fun);
+    m.Initialize();
+}
+
+// Also okay (order of Update* doesn't matter here)
+{
+    Model m;
+    m.UpdateParameters(some_params);
+    m.UpdateModel(some_fun);
+    m.Initialize();
+}
+
+// Okay, but redundant
+{
+    Model m;
+    m.UpdateParameters(some_params);
+    m.Initialize();
+    m.UpdateModel(some_fun);
+    m.Initialize();
+}
+
+// Applies also to Kernel classes
+{
+    Kernel k;
+    k.UpdateKernel(some_fun);
+    k.Initialize();
+}
+```
+Typically, unless you call the model and kernel `Update*` methods directly, you don't need to worry about calling `Initialize()` yourself. In most cases, you interact with the `SVGD` object, and its `UpdateModelParameters` and `UpdateKernelParameters` functions take care of re-initializing the updates internally.
 
 ## How to create a kernel or model?
 
@@ -66,10 +100,11 @@ Model combined = model1 + model2;
 Eigen::VectorXd temp(2);
 temp << 0.5, 2.6;
 
-
+// Initialize models (REQUIRED IF YOU WANT TO EVALUATE THE FUNCTIONS DIRECTLY; OTHERWISE SVGD::Initialize does that automatically for you)
 model1.Initialize();
 model2.Initialize();
 combined.Initialize();
+
 ```
 NOTE: `UpdateModel` must be done before `UpdateParameters` can be executed in this case
 

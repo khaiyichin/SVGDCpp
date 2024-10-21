@@ -114,8 +114,6 @@ public:
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormalizationConstant();
-
-        Initialize();
     }
 
     /**

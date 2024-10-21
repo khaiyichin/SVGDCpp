@@ -190,6 +190,7 @@ public:
         else
         {
             kernel_ptr_->UpdateParameters(params);
+            kernel_ptr_->Initialize();
         }
     }
 
@@ -203,6 +204,7 @@ public:
     void UpdateModelParameters(const std::vector<Eigen::MatrixXd> &params)
     {
         model_ptr_->UpdateParameters(params);
+        model_ptr_->Initialize();
     }
 
     /**
@@ -258,6 +260,7 @@ protected:
             log_model_grad_matrix_.block(0, i, dimension_, 1) = model_ptr_->EvaluateLogModelGrad(coord_matrix_ptr_->col(i));
 
             kernel_ptr_->UpdateLocation(coord_matrix_ptr_->col(i));
+            kernel_ptr_->Initialize();
 
             // Compute kernel and grad kernel
             if (parallel_)

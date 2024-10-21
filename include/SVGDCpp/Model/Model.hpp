@@ -90,6 +90,55 @@ public:
 
         new_obj.UpdateModel(sum_model_fun);
 
+        Initialize();
+
+        return new_obj;
+    }
+
+    /**
+     * @brief Subtract `*this` by @a obj to produce a new @ref Model object.
+     *
+     * @param obj Another parametrized @ref Model object.
+     * @return A new @ref Kernel object whose function is the difference of `*this` and @a obj functions.
+     */
+    Model operator-(const Model &obj)
+    {
+        // Ensure that dimensions are correct
+        if (dimension_ != obj.dimension_)
+        {
+            throw DimensionMismatchException("Only models with the same variable dimensions can be added.");
+        }
+
+        if (!model_fun_ || !obj.model_fun_)
+        {
+            throw UnsetException("One of the model functions is unset; functional composition requires both model functions to be set.");
+        }
+
+        // Create new object and combine model parameters
+        Model new_obj(dimension_);
+        new_obj.model_parameters_ = model_parameters_;
+        new_obj.model_parameters_.insert(
+            new_obj.model_parameters_.end(),
+            obj.model_parameters_.begin(),
+            obj.model_parameters_.end());
+
+        // Define the sum of two models
+        auto sum_model_fun = [this, &obj](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        {
+            // Split the parameters
+            std::vector<MatrixXADd> params_1(params.begin(), params.begin() + this->model_parameters_.size());
+            std::vector<MatrixXADd> params_2(params.begin() + this->model_parameters_.size(), params.end());
+
+            // Compute the result
+            VectorXADd result(1);
+            result << this->ModelFun(x, params_1).array() - obj.ModelFun(x, params_2).array();
+            return result;
+        };
+
+        new_obj.UpdateModel(sum_model_fun);
+
+        Initialize();
+
         return new_obj;
     }
 
@@ -134,6 +183,55 @@ public:
         };
 
         new_obj.UpdateModel(product_model_fun);
+
+        Initialize();
+
+        return new_obj;
+    }
+
+    /**
+     * @brief Divide `*this` by @a obj to produce a new @ref Model object.
+     *
+     * @param obj Another parametrized @ref Model object.
+     * @return A new @ref Kernel object whose function is the quotient of `*this` and @a obj functions.
+     */
+    Model operator/(const Model &obj)
+    {
+        // Ensure that dimensions are correct
+        if (dimension_ != obj.dimension_)
+        {
+            throw DimensionMismatchException("Only models with the same variable dimensions can be multiplied.");
+        }
+
+        if (!model_fun_ || !obj.model_fun_)
+        {
+            throw UnsetException("One of the model functions is unset; functional composition requires both model functions to be set.");
+        }
+
+        // Create new object and combine model parameters
+        Model new_obj(dimension_);
+        new_obj.model_parameters_ = model_parameters_;
+        new_obj.model_parameters_.insert(
+            new_obj.model_parameters_.end(),
+            obj.model_parameters_.begin(),
+            obj.model_parameters_.end());
+
+        // Define the quotient of two models
+        auto quotient_model_fun = [this, &obj](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        {
+            // Split the parameters
+            std::vector<MatrixXADd> params_1(params.begin(), params.begin() + this->model_parameters_.size());
+            std::vector<MatrixXADd> params_2(params.begin() + this->model_parameters_.size(), params.end());
+
+            // Compute the result
+            VectorXADd result(1);
+            result << this->ModelFun(x, params_1).array() / obj.ModelFun(x, params_2).array();
+            return result;
+        };
+
+        new_obj.UpdateModel(quotient_model_fun);
+
+        Initialize();
 
         return new_obj;
     }
@@ -283,8 +381,6 @@ public:
         }
 
         model_parameters_ = converted_params;
-
-        Initialize();
     }
 
     /**
