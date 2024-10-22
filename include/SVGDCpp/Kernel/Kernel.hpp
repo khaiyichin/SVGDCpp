@@ -89,7 +89,7 @@ public:
 
         new_obj.UpdateKernel(sum_kernel_fun);
 
-        Initialize();
+        new_obj.Initialize();
 
         return new_obj;
     }
@@ -135,7 +135,7 @@ public:
 
         new_obj.UpdateKernel(difference_kernel_fun);
 
-        Initialize();
+        new_obj.Initialize();
 
         return new_obj;
     }
@@ -181,7 +181,7 @@ public:
 
         new_obj.UpdateKernel(product_kernel_fun);
 
-        Initialize();
+        new_obj.Initialize();
 
         return new_obj;
     }
@@ -227,7 +227,7 @@ public:
 
         new_obj.UpdateKernel(quotient_kernel_fun);
 
-        Initialize();
+        new_obj.Initialize();
 
         return new_obj;
     }

@@ -70,7 +70,7 @@ Typically, unless you call the model and kernel `Update*` methods directly, you 
 
 ## How to create a kernel or model?
 
-Note: the kernel and model **MUST** to be scalar functions
+Note: the kernel and model **MUST** to be positive scalar functions (if negative log model functions will cause program to crash)
 
 Method 1: using the Kernel or Model class directly. This is useful if you want to compose different models into one.
 ```cpp
@@ -150,3 +150,11 @@ public:
 ```
 Method 2b (advanced usage): override `EvaluateModel*` and/or `EvaluateLogModel*` directly if you don't need automatic differentiation AND if you don't intend to compose new models from these derived models. This is because functional composition (e.g., obj1+obj2, obj1*obj2) utilize the `ModelFun` method of the respective `Model` objects; overriding the `Evaluate*` methods directly means combining the `nullptr`s of both `model_fun_` variables. THIS IS USEFUL IF YOU CAN PROVIDE CLOSED-FORM FUNCTIONS BECAUSE IT PROVIDES SOME OPTIMIZATION (THOUGH I'M NOT SURE BY HOW MUCH).
 
+## Some common exceptions thrown by CppAD
+```
+cppad-20240602 error from a known source:
+yq = f.Forward(q, xq): a zero order Taylor coefficient is nan.
+Corresponding independent variables vector was written to binary a file.
+vector_size = 2
+```
+source: invalid evaluation of function, e.g., log of a negative number

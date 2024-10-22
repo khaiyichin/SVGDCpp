@@ -90,7 +90,7 @@ public:
 
         new_obj.UpdateModel(sum_model_fun);
 
-        Initialize();
+        new_obj.Initialize();
 
         return new_obj;
     }
@@ -137,7 +137,7 @@ public:
 
         new_obj.UpdateModel(sum_model_fun);
 
-        Initialize();
+        new_obj.Initialize();
 
         return new_obj;
     }
@@ -184,7 +184,7 @@ public:
 
         new_obj.UpdateModel(product_model_fun);
 
-        Initialize();
+        new_obj.Initialize();
 
         return new_obj;
     }
@@ -231,7 +231,7 @@ public:
 
         new_obj.UpdateModel(quotient_model_fun);
 
-        Initialize();
+        new_obj.Initialize();
 
         return new_obj;
     }
