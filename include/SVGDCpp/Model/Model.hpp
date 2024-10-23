@@ -411,7 +411,8 @@ public:
     /**
      * @brief Update the model symbolic function.
      *
-     * @param model_fun STL function defining the model function. The function argument should be a `const &` @ref VectorXADd and a `const &` @ref MatrixXADd vector; it returns a @ref VectorXADd.
+     * @param model_fun STL function defining the model function.
+     * The function argument should be a `const &` @ref VectorXADd and a `const &` @ref MatrixXADd STL vector; it returns a @ref VectorXADd.
      */
     void UpdateModel(std::function<VectorXADd(const VectorXADd &, const std::vector<MatrixXADd> &)> model_fun)
     {

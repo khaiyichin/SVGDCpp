@@ -74,9 +74,10 @@ public:
                                       // this can be optimized away if you don't intend to compose kernels from this class
 
         // Setup kernel function
-        std::function<VectorXADd(const VectorXADd &, const std::vector<MatrixXADd> &)> kernel_fun = [this](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        auto kernel_fun =
+            [this](const VectorXADd &x, const std::vector<MatrixXADd> &params, const VectorXADd &location) -> VectorXADd
         {
-            VectorXADd result(1), diff = x - location_vec_ad_;
+            VectorXADd result(1), diff = x - location;
             result << (-diff.transpose() * params[0] * diff).array().exp();
             return result;
         };
