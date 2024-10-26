@@ -1,5 +1,5 @@
-#ifndef SVGD_CPP_RMSPROP_HPP
-#define SVGD_CPP_RMSPROP_HPP
+#ifndef SVGDCPP_RMSPROP_HPP
+#define SVGDCPP_RMSPROP_HPP
 
 #include "../Core.hpp"
 #include "Optimizer.hpp"
@@ -19,7 +19,7 @@ public:
     {
         if (beta > 1.0 || beta < 0.0)
         {
-            throw std::invalid_argument("SVGDCpp: [Argument Error] Invalid value for decay parameter beta.");
+            throw std::invalid_argument(SVGDCPP_LOG_PREFIX + "[Argument Error] Invalid value for decay parameter beta.");
         }
     }
 

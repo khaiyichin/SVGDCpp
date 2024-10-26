@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef SVGD_CPP_EXCEPTIONS_HPP
-#define SVGD_CPP_EXCEPTIONS_HPP
+#ifndef SVGDCPP_EXCEPTIONS_HPP
+#define SVGDCPP_EXCEPTIONS_HPP
 
 #include <exception>
 #include <string>

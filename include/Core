@@ -9,8 +9,8 @@
  * @endcode
  */
 
-#ifndef SVGD_CPP_CORE_MODULE_HPP
-#define SVGD_CPP_CORE_MODULE_HPP
+#ifndef SVGDCPP_CORE_MODULE_HPP
+#define SVGDCPP_CORE_MODULE_HPP
 
 #include "SVGDCpp/Core.hpp"
 #include "SVGDCpp/SVGD.hpp"

@@ -1,5 +1,5 @@
-#ifndef SVGD_CPP_ADAM_HPP
-#define SVGD_CPP_ADAM_HPP
+#ifndef SVGDCPP_ADAM_HPP
+#define SVGDCPP_ADAM_HPP
 
 #include "../Core.hpp"
 #include "Optimizer.hpp"
@@ -21,7 +21,7 @@ public:
     {
         if (beta1 >= 1.0 || beta1 < 0.0 || beta2 >= 1.0 || beta2 < 0.0)
         {
-            throw std::invalid_argument("SVGDCpp: [Argument Error] Invalid value for decay parameter beta.");
+            throw std::invalid_argument(SVGDCPP_LOG_PREFIX + "[Argument Error] Invalid value for decay parameter beta.");
         }
     }
 
@@ -31,6 +31,8 @@ public:
     {
         sum_of_sq_grad_ = Eigen::MatrixXd::Zero(dimension_, num_particles_).array();
         sum_of_grad_ = Eigen::MatrixXd::Zero(dimension_, num_particles_).array();
+
+        counter_ = 0;
     }
 
     virtual Eigen::MatrixXd Step(const Eigen::MatrixXd &grad_matrix)

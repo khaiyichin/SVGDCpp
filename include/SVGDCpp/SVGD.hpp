@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef SVGD_CPP_SVGD_HPP
-#define SVGD_CPP_SVGD_HPP
+#ifndef SVGDCPP_SVGD_HPP
+#define SVGDCPP_SVGD_HPP
 
 #include "Core.hpp"
 #include "Kernel/Kernel.hpp"
@@ -26,14 +26,14 @@
  * size_t dim = 2, num_particles = 10, num_iterations = 1000;
  * auto x0 = std::make_shared<Eigen::MatrixXd>(3*Eigen::MatrixXd::Random(dim, num_particles));
  *
- * // Create RBF kernel pointer
- * std::shared_ptr<Kernel> kernel_ptr = std::make_shared<GaussianRBFKernel>(x0, GaussianRBFKernel::ScaleMethod::Median, mvn_ptr);
- *
- * // Creat multivariate normal model pointer
+ * // Create multivariate normal model pointer
  * Eigen::Vector2d mean(5, -5);
  * Eigen::Matrix2d covariance;
  * covariance << 0.5, 0, 0, 0.5;
  * std::shared_ptr<Model> model_ptr = std::make_shared<MultivariateNormal>(mean, covariance);
+ *
+ * // Create RBF kernel pointer
+ * std::shared_ptr<Kernel> kernel_ptr = std::make_shared<GaussianRBFKernel>(x0, GaussianRBFKernel::ScaleMethod::Median, model_ptr);
  *
  * // Create Adam optimizer pointer
  * std::shared_ptr<Optimizer>opt_ptr = std::make_shared<Adam>(dim, num_particles, 1.0e-1, 0.9, 0.999);
@@ -50,6 +50,28 @@
 class SVGD
 {
 public:
+    /**
+     * @brief Construct a new SVGD object.
+     * @details Overloads the main constructor so that users can create this object without specifying bounds.
+     *
+     * @param dim Dimension of particle coordinates; should match the number of rows in the coordinate matrix.
+     * @param iter Number of iterations to run SVGD.
+     * @param coord_mat_ptr Pointer to the particle coordinate matrix.
+     * @param kernel_ptr Pointer to a @ref Kernel (or its derived class) object.
+     * @param model_ptr Pointer to a @ref Model (or its derived class) object.
+     * @param optimizer_ptr Pointer to an @ref Optimizer (or its derived class) object.
+     * @param parallel Flag to run SVGD in multi-threaded mode.
+     */
+    SVGD(
+        const size_t &dim,
+        const size_t &iter,
+        const std::shared_ptr<Eigen::MatrixXd> &coord_mat_ptr,
+        const std::shared_ptr<Kernel> &kernel_ptr,
+        const std::shared_ptr<Model> &model_ptr,
+        const std::shared_ptr<Optimizer> &optimizer_ptr,
+        const bool &parallel = false)
+        : SVGD(dim, iter, coord_mat_ptr, kernel_ptr, model_ptr, optimizer_ptr, Eigen::Matrix<double, 1, 1>(-INFINITY), Eigen::Matrix<double, 1, 1>(INFINITY), parallel) {}
+
     /**
      * @brief Construct a new SVGD object.
      *
@@ -70,8 +92,8 @@ public:
         const std::shared_ptr<Kernel> &kernel_ptr,
         const std::shared_ptr<Model> &model_ptr,
         const std::shared_ptr<Optimizer> &optimizer_ptr,
-        const Eigen::VectorXd &bound_lower = Eigen::Matrix<double, 1, 1>(-INFINITY),
-        const Eigen::VectorXd &bound_upper = Eigen::Matrix<double, 1, 1>(INFINITY),
+        const Eigen::VectorXd &bound_lower,
+        const Eigen::VectorXd &bound_upper,
         const bool &parallel = false)
         : dimension_(coord_mat_ptr->rows()),
           num_iterations_(iter),
@@ -98,7 +120,7 @@ public:
             }
             else
             {
-                std::cout << "SVGDCpp: Lower bound set to " << bound_lower.transpose() << std::endl;
+                std::cout << SVGDCPP_LOG_PREFIX + "Lower bound set to " << bound_lower.transpose() << std::endl;
                 check_bounds_ = true;
             }
 
@@ -110,7 +132,7 @@ public:
             }
             else
             {
-                std::cout << "SVGDCpp: Upper bound set to " << bound_upper.transpose() << std::endl;
+                std::cout << SVGDCPP_LOG_PREFIX + "Upper bound set to " << bound_upper.transpose() << std::endl;
                 check_bounds_ = true;
             }
 
@@ -128,6 +150,20 @@ public:
         kernel_ptr_ = kernel_ptr;
         model_ptr_ = model_ptr;
         optimizer_ptr_ = optimizer_ptr;
+
+        // Setup CppAD for parallel usage
+        if (parallel_)
+        {
+            std::cout << SVGDCPP_LOG_PREFIX << Eigen::nbThreads() << " threads available for use." << std::endl;
+            // Parallel application inspired from https://github.com/coin-or/CppAD/issues/197#issuecomment-1983462984
+
+            // Create copies of the original kernel for n particles
+            for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            {
+                model_ptr_vector_.push_back(model_ptr_->CloneUniquePointer());
+                kernel_ptr_vector_.push_back(kernel_ptr_->CloneUniquePointer());
+            }
+        }
     }
 
     /**
@@ -142,50 +178,47 @@ public:
      */
     void Initialize()
     {
-        // Initialize the model
-        model_ptr_->Initialize();
-
         // Initialize the optimizer
         optimizer_ptr_->Initialize();
 
-        // Initialize the kernel
         if (parallel_)
         {
-            /** @todo Need to implement */
-            // // Create n copies of the kernel function and initialize them
-            // kernel_vector_.resize(coord_matrix_ptr_->cols(), 1);
+#pragma omp parallel for
+            for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            {
+                // Initialize the model
+                model_ptr_vector_[i]->Initialize();
 
-            // for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
-            // {
-            //     kernel_vector_(i) = *kernel_ptr_;
-            //     kernel_vector_(i).UpdateLocation(coord_matrix_ptr_->col(i)); // particle coordinates matrix is expected to have dimension rows x n columns
-            //     kernel_vector_(i).Initialize();
-            // }
+                // Initialize the kernel
+                kernel_ptr_vector_[i]->Initialize();
+            }
         }
         else
         {
+            // Initialize the model
+            model_ptr_->Initialize();
+
+            // Initialize the kernel
             kernel_ptr_->Initialize();
         }
     }
 
     /**
      * @brief Update the kernel parameters.
+     * @details Users can call this to change the parameters of the kernel.
      *
-     * @details This is an application layer method: call this to change the parameters of the kernel
-     *
-     * @param params Vector of variable-sized Eigen matrices
+     * @param params Vector of variable-sized Eigen matrices.
      */
     void UpdateKernelParameters(const std::vector<Eigen::MatrixXd> &params)
     {
         if (parallel_)
         {
-            // std::for_each(kernel_vector_.data().begin(),
-            //               kernel_vector_.data().end(),
-            //               [=](Kernel &k)
-            //               {
-            //                   k.UpdateParameters(params);
-            //                   k.Initialize();
-            //               });
+#pragma omp parallel for
+            for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            {
+                kernel_ptr_vector_[i]->UpdateParameters(params);
+                kernel_ptr_vector_[i]->Initialize();
+            }
         }
         else
         {
@@ -196,15 +229,26 @@ public:
 
     /**
      * @brief Update the model parameters.
+     * @details Users can call this to change the parameters of the model.
      *
-     * @details This is an application layer method: call this to change the parameters of the model.
-     *
-     * @param params Vector of variable-sized Eigen matrices
+     * @param params Vector of variable-sized Eigen matrices.
      */
     void UpdateModelParameters(const std::vector<Eigen::MatrixXd> &params)
     {
-        model_ptr_->UpdateParameters(params);
-        model_ptr_->Initialize();
+        if (parallel_)
+        {
+#pragma omp parallel for
+            for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            {
+                model_ptr_vector_[i]->UpdateParameters(params);
+                model_ptr_vector_[i]->Initialize();
+            }
+        }
+        else
+        {
+            model_ptr_->UpdateParameters(params);
+            model_ptr_->Initialize();
+        }
     }
 
     /**
@@ -227,11 +271,23 @@ protected:
      */
     void Step()
     {
-        // Run model step functions
-        model_ptr_->Step();
+        if (parallel_)
+        {
+#pragma omp parallel for
+            for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            {
+                model_ptr_vector_[i]->Step();
+                kernel_ptr_vector_[i]->Step();
+            }
+        }
+        else
+        {
+            // Run model step functions
+            model_ptr_->Step();
 
-        // Run kernel step functions
-        kernel_ptr_->Step();
+            // Run kernel step functions
+            kernel_ptr_->Step();
+        }
 
         // Update particle positions
         *coord_matrix_ptr_ += optimizer_ptr_->Step(ComputePhi());
@@ -248,38 +304,43 @@ protected:
     }
 
     /**
-     * @brief Compute the Stein variational gradient.
+     * @brief Compute the Stein variational gradient for one iteration.
      *
      * @return Matrix of gradients with the size of (dimension) x (num of particles).
      */
     Eigen::MatrixXd ComputePhi()
     {
-        for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
+        // Go through each particle
+        if (parallel_)
         {
-            // Compute log pdf grad
-            log_model_grad_matrix_.block(0, i, dimension_, 1) = model_ptr_->EvaluateLogModelGrad(coord_matrix_ptr_->col(i));
-
-            kernel_ptr_->UpdateLocation(coord_matrix_ptr_->col(i));
-            kernel_ptr_->Initialize();
-
-            // Compute kernel and grad kernel
-            if (parallel_)
+#pragma omp parallel for
+            for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
             {
-                // TODO
-                // // Update kernel function location
-                // kernel_vector_(i).UpdateLocation(coord_matrix_ptr_->col(i));
+                // Compute log pdf grad
+                log_model_grad_matrix_.block(0, i, dimension_, 1) = model_ptr_vector_[i]->EvaluateLogModelGrad(coord_matrix_ptr_->col(i));
 
-                // // Run a single step on the kernel functions
-                // kernel_vector_(i).Step();
+                kernel_ptr_vector_[i]->UpdateLocation(coord_matrix_ptr_->col(i));
+                kernel_ptr_vector_[i]->Initialize();
 
-                // for (size_t j = 0; j < coord_matrix_ptr_->cols(); ++i)
-                // {
-                //     kernel_val(i, j) = kernel_vector_(i).EvaluateKernel(coord_matrix_ptr_->col(j));                                            // k(x_j, x_i)
-                //     kernel_grad_val.block(j * dimension_, i, dimension_, 1) = kernel_vector_(i).EvaluateKernelGrad(coord_matrix_ptr_->col(j)); // grad k(x_j, x_i)
-                // }
+                // Iterate through each neighbor of the particle (including itself) to compute kernel related values
+                for (int j = 0; j < coord_matrix_ptr_->cols(); ++j)
+                {
+                    kernel_matrix_(j, i) = kernel_ptr_vector_[i]->EvaluateKernel(coord_matrix_ptr_->col(j));                                            // k(x_j, x_i)
+                    kernel_grad_matrix_.block(j * dimension_, i, dimension_, 1) = kernel_ptr_vector_[i]->EvaluateKernelGrad(coord_matrix_ptr_->col(j)); // grad k(x_j, x_i)
+                }
             }
-            else
+        }
+        else
+        {
+            for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
             {
+                // Compute log pdf grad
+                log_model_grad_matrix_.block(0, i, dimension_, 1) = model_ptr_->EvaluateLogModelGrad(coord_matrix_ptr_->col(i));
+
+                kernel_ptr_->UpdateLocation(coord_matrix_ptr_->col(i));
+                kernel_ptr_->Initialize();
+
+                // Iterate through each neighbor of the particle (including itself) to compute kernel related values
                 for (int j = 0; j < coord_matrix_ptr_->cols(); ++j)
                 {
                     kernel_matrix_(j, i) = kernel_ptr_->EvaluateKernel(coord_matrix_ptr_->col(j));                                            // k(x_j, x_i)
@@ -288,6 +349,8 @@ protected:
             }
         }
 
+        // std::cout << "debug log_model_grad_matrix_\n" << log_model_grad_matrix_ << "\nkernel_matrix_\n" << kernel_matrix_ << "\nkernel_grad_matrix_\n" << kernel_grad_matrix_ << std::endl;
+
         return (1.0 / coord_matrix_ptr_->cols()) * (log_model_grad_matrix_ * kernel_matrix_ + kernel_grad_indexer_ * kernel_grad_matrix_);
     }
 
@@ -295,7 +358,7 @@ protected:
 
     size_t num_iterations_; ///< Number of iterations to run SVGD.
 
-    const bool parallel_; ///< Flag to indicate whether to run SVGD with threads. @todo Need to implement
+    const bool parallel_ = false; ///< Flag to indicate whether to run SVGD with multiple threads.
 
     bool check_bounds_ = false; ///< Flag to indicate whether bounds checking is necessary.
 
@@ -320,7 +383,9 @@ protected:
 
     Eigen::MatrixXd kernel_grad_indexer_; ///< Matrix to index the gradients of the kernel function; shape is @a m x (@a m x @a n).
 
-    // Eigen::Matrix<Kernel, -1, 1> kernel_vector_; ///< @todo Need to implement
+    std::vector<std::unique_ptr<Kernel>> kernel_ptr_vector_; ///< Vector of pointers to Kernel instance copies for parallel computation
+
+    std::vector<std::unique_ptr<Model>> model_ptr_vector_; ///< Vector of pointers to Model instance copies for parallel computation
 };
 
 #endif

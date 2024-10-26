@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef SVGD_CPP_CORE_HPP
-#define SVGD_CPP_CORE_HPP
+#ifndef SVGDCPP_CORE_HPP
+#define SVGDCPP_CORE_HPP
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -47,7 +47,7 @@ using MatrixXADd = Eigen::Matrix<CppAD::AD<double>, Eigen::Dynamic, Eigen::Dynam
  * @ingroup Core_Module
  */
 template <typename T1, typename T2>
-bool CompareVectorSizes(const T1 &a, const T2 &b)
+inline bool CompareVectorSizes(const T1 &a, const T2 &b)
 {
     return (a.rows() == b.rows());
 }
@@ -58,7 +58,7 @@ bool CompareVectorSizes(const T1 &a, const T2 &b)
  * @param eigen_mat Dynamic matrix of type double.
  * @return The input matrix but of Cpp::AD<double> type.
  */
-MatrixXADd ConvertToCppAD(const Eigen::MatrixXd &eigen_mat)
+inline MatrixXADd ConvertToCppAD(const Eigen::MatrixXd &eigen_mat)
 {
     return eigen_mat.unaryExpr([](const double &value)
                                { return CppAD::Var2Par(CppAD::AD<double>(value)); });
@@ -70,10 +70,40 @@ MatrixXADd ConvertToCppAD(const Eigen::MatrixXd &eigen_mat)
  * @param cppad_mat Dynamic matrix of type CppAD::AD<double>.
  * @return The input matrix but of double type.
  */
-Eigen::MatrixXd ConvertFromCppAD(const MatrixXADd &cppad_mat)
+inline Eigen::MatrixXd ConvertFromCppAD(const MatrixXADd &cppad_mat)
 {
     return cppad_mat.unaryExpr([](const CppAD::AD<double> &value)
                                { return CppAD::Value(value); });
+}
+
+/**
+ * @brief Utility function to set up CppAD so that SVGD can run in parallel mode.
+ * @details Inspired by https://github.com/coin-or/CppAD/issues/197#issuecomment-1983462984.
+ *
+ */
+inline void SetupForParallelMode()
+{
+    // Define the helper functions within the scope of the inline function
+    auto in_parallel = []() -> bool
+    {
+        return omp_in_parallel() != 0;
+    };
+
+    auto thread_number = []() -> size_t
+    {
+        return static_cast<size_t>(omp_get_thread_num());
+    };
+
+    // Setup for multi-threading environment with CppAD
+    CppAD::thread_alloc::parallel_setup(omp_get_max_threads(), in_parallel, thread_number);
+    CppAD::thread_alloc::hold_memory(true); // it should be faster, even when num_thread is equal to one,
+                                            // for thread_alloc to hold onto memory.
+
+    CppAD::parallel_ad<double>(); // Setup CppAD for parallel use with AD types
+
+    // Verify that Eigen::VectorXd and VectorXADd meet the requirements of SimpleVector for CppAD
+    CppAD::CheckSimpleVector<double, Eigen::VectorXd>();
+    CppAD::CheckSimpleVector<CppAD::AD<double>, VectorXADd>();
 }
 
 #endif

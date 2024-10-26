@@ -8,8 +8,8 @@
  * @copyright Copyright (c) 2024
  *
  */
-#ifndef SVGD_CPP_KERNEL_HPP
-#define SVGD_CPP_KERNEL_HPP
+#ifndef SVGDCPP_KERNEL_HPP
+#define SVGDCPP_KERNEL_HPP
 
 #include "../Core.hpp"
 
@@ -89,8 +89,6 @@ public:
 
         new_obj.UpdateKernel(sum_kernel_fun);
 
-        new_obj.Initialize();
-
         return new_obj;
     }
 
@@ -134,8 +132,6 @@ public:
         };
 
         new_obj.UpdateKernel(difference_kernel_fun);
-
-        new_obj.Initialize();
 
         return new_obj;
     }
@@ -181,8 +177,6 @@ public:
 
         new_obj.UpdateKernel(product_kernel_fun);
 
-        new_obj.Initialize();
-
         return new_obj;
     }
 
@@ -227,8 +221,6 @@ public:
 
         new_obj.UpdateKernel(quotient_kernel_fun);
 
-        new_obj.Initialize();
-
         return new_obj;
     }
 
@@ -241,9 +233,29 @@ public:
         location_vec_ad_ = obj.location_vec_ad_;
         kernel_parameters_ = obj.kernel_parameters_;
         kernel_fun_ = obj.kernel_fun_;
-        kernel_fun_ad_ = obj.kernel_fun_ad_;
+        kernel_fun_ad_ = CppAD::ADFun<double>(); // not copying over ADFun object to prevent complications when using in multi-threaded mode
 
         return *this;
+    }
+
+    /**
+     * @brief Copy an instance of this object into a unique pointer.
+     *
+     * @return Unique pointer to a copy of *this.
+     */
+    virtual std::unique_ptr<Kernel> CloneUniquePointer() const
+    {
+        return std::make_unique<Kernel>(*this);
+    }
+
+    /**
+     * @brief Copy an instance of this object into a shared pointer.
+     *
+     * @return Shared pointer to a copy of *this.
+     */
+    virtual std::shared_ptr<Kernel> CloneSharedPointer() const
+    {
+        return std::make_shared<Kernel>(*this);
     }
 
     /**

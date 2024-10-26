@@ -7,8 +7,8 @@
  * #include <SVGDCpp/Model>
  * @endcode
  */
-#ifndef SVGD_CPP_MODEL_MODULE_HPP
-#define SVGD_CPP_MODEL_MODULE_HPP
+#ifndef SVGDCPP_MODEL_MODULE_HPP
+#define SVGDCPP_MODEL_MODULE_HPP
 
 #include "SVGDCpp/Model/Model.hpp"
 #include "SVGDCpp/Model/MultivariateNormal.hpp"

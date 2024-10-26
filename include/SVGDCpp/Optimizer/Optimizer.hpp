@@ -1,5 +1,5 @@
-#ifndef SVGD_CPP_OPTIMIZER_HPP
-#define SVGD_CPP_OPTIMIZER_HPP
+#ifndef SVGDCPP_OPTIMIZER_HPP
+#define SVGDCPP_OPTIMIZER_HPP
 
 #include "../Core.hpp"
 

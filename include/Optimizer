@@ -1,5 +1,5 @@
-#ifndef SVGD_CPP_OPTIMIZER_MODULE_HPP
-#define SVGD_CPP_OPTIMIZER_MODULE_HPP
+#ifndef SVGDCPP_OPTIMIZER_MODULE_HPP
+#define SVGDCPP_OPTIMIZER_MODULE_HPP
 
 #include "SVGDCpp/Optimizer/Optimizer.hpp"
 #include "SVGDCpp/Optimizer/RMSProp.hpp"

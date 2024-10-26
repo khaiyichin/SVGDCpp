@@ -1,5 +1,5 @@
-#ifndef SVGD_CPP_BINOMIAL_LIKELIHOOD_HPP
-#define SVGD_CPP_BINOMIAL_LIKELIHOOD_HPP
+#ifndef SVGDCPP_BINOMIAL_LIKELIHOOD_HPP
+#define SVGDCPP_BINOMIAL_LIKELIHOOD_HPP
 
 #include "../Core.hpp"
 #include "Model.hpp"
@@ -17,7 +17,7 @@ public:
         model_parameters_.push_back(ConvertToCppAD(f));
 
         // Define model function
-        auto model_fun = [this](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        auto model_fun = [](const VectorXADd &x, const std::vector<MatrixXADd> &params)
         {
             CppAD::AD<double> n = params[0](0);
             CppAD::AD<double> t = params[1](0);
@@ -33,6 +33,26 @@ public:
     }
 
     ~BinomialLikelihood() {}
+
+    /**
+     * @brief Copy an instance of this object into a unique pointer.
+     *
+     * @return Unique pointer to a copy of *this.
+     */
+    virtual std::unique_ptr<Model> CloneUniquePointer() const
+    {
+        return std::make_unique<BinomialLikelihood>(*this);
+    }
+
+    /**
+     * @brief Copy an instance of this object into a shared pointer.
+     *
+     * @return Shared pointer to a copy of *this.
+     */
+    virtual std::shared_ptr<Model> CloneSharedPointer() const
+    {
+        return std::make_shared<BinomialLikelihood>(*this);
+    }
 };
 
 #endif

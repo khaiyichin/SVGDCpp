@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef SVGD_CPP_MODEL_HPP
-#define SVGD_CPP_MODEL_HPP
+#ifndef SVGDCPP_MODEL_HPP
+#define SVGDCPP_MODEL_HPP
 
 #include "../Core.hpp"
 
@@ -90,8 +90,6 @@ public:
 
         new_obj.UpdateModel(sum_model_fun);
 
-        new_obj.Initialize();
-
         return new_obj;
     }
 
@@ -136,8 +134,6 @@ public:
         };
 
         new_obj.UpdateModel(sum_model_fun);
-
-        new_obj.Initialize();
 
         return new_obj;
     }
@@ -184,8 +180,6 @@ public:
 
         new_obj.UpdateModel(product_model_fun);
 
-        new_obj.Initialize();
-
         return new_obj;
     }
 
@@ -231,8 +225,6 @@ public:
 
         new_obj.UpdateModel(quotient_model_fun);
 
-        new_obj.Initialize();
-
         return new_obj;
     }
 
@@ -248,6 +240,26 @@ public:
         logmodel_fun_ad_ = obj.logmodel_fun_ad_;
 
         return *this;
+    }
+
+    /**
+     * @brief Copy an instance of this object into a unique pointer.
+     *
+     * @return Unique pointer to a copy of *this.
+     */
+    virtual std::unique_ptr<Model> CloneUniquePointer() const
+    {
+        return std::make_unique<Model>(*this);
+    }
+
+    /**
+     * @brief Copy an instance of this object into a shared pointer.
+     *
+     * @return Shared pointer to a copy of *this.
+     */
+    virtual std::shared_ptr<Model> CloneSharedPointer() const
+    {
+        return std::make_shared<Model>(*this);
     }
 
     /**

@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef SVGD_CPP_MULTIVARIATE_NORMAL_HPP
-#define SVGD_CPP_MULTIVARIATE_NORMAL_HPP
+#ifndef SVGDCPP_MULTIVARIATE_NORMAL_HPP
+#define SVGDCPP_MULTIVARIATE_NORMAL_HPP
 
 #include "../Core.hpp"
 #include "Model.hpp"
@@ -55,7 +55,7 @@ public:
         ComputeNormalizationConstant();
 
         // Define model function (the kernel density only, without normalization constant)
-        auto model_fun = [this](const VectorXADd &x, const std::vector<MatrixXADd> &params)
+        auto model_fun = [](const VectorXADd &x, const std::vector<MatrixXADd> &params)
         {
             VectorXADd result(1), diff = x - params[0];
             result << (-0.5 * (diff.transpose() * params[1].inverse() * diff).array()).exp();
@@ -114,6 +114,26 @@ public:
 
         // Compute the normalization constant based on the updated parameters
         ComputeNormalizationConstant();
+    }
+
+    /**
+     * @brief Copy an instance of this object into a unique pointer.
+     *
+     * @return Unique pointer to a copy of *this.
+     */
+    virtual std::unique_ptr<Model> CloneUniquePointer() const
+    {
+        return std::make_unique<MultivariateNormal>(*this);
+    }
+
+    /**
+     * @brief Copy an instance of this object into a shared pointer.
+     *
+     * @return Shared pointer to a copy of *this.
+     */
+    virtual std::shared_ptr<Model> CloneSharedPointer() const
+    {
+        return std::make_shared<MultivariateNormal>(*this);
     }
 
     /**

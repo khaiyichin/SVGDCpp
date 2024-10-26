@@ -1,5 +1,5 @@
-#ifndef SVGD_CPP_ADAGRAD_HPP
-#define SVGD_CPP_ADAGRAD_HPP
+#ifndef SVGDCPP_ADAGRAD_HPP
+#define SVGDCPP_ADAGRAD_HPP
 
 #include "../Core.hpp"
 #include "Optimizer.hpp"

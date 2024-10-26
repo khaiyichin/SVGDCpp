@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef SVGD_CPP_GAUSSIAN_RBF_KERNEL_HPP
-#define SVGD_CPP_GAUSSIAN_RBF_KERNEL_HPP
+#ifndef SVGDCPP_GAUSSIAN_RBF_KERNEL_HPP
+#define SVGDCPP_GAUSSIAN_RBF_KERNEL_HPP
 
 #include "../Core.hpp"
 #include "../Model/Model.hpp"
@@ -87,8 +87,6 @@ public:
 
         // Update kernel function and initialize
         UpdateKernel(kernel_fun);
-
-        Initialize();
     }
 
     /**
@@ -116,6 +114,26 @@ public:
      *
      */
     GaussianRBFKernel &operator=(const Kernel &obj) = delete;
+
+    /**
+     * @brief Copy an instance of this object into a unique pointer.
+     *
+     * @return Unique pointer to a copy of *this.
+     */
+    virtual std::unique_ptr<Kernel> CloneUniquePointer() const override
+    {
+        return std::make_unique<GaussianRBFKernel>(*this);
+    }
+
+    /**
+     * @brief Copy an instance of this object into a shared pointer.
+     *
+     * @return Shared pointer to a copy of *this.
+     */
+    virtual std::shared_ptr<Kernel> CloneSharedPointer() const override
+    {
+        return std::make_shared<GaussianRBFKernel>(*this);
+    }
 
     /**
      * @brief Execute methods required for each step of the SVGD.
@@ -193,7 +211,7 @@ protected:
             return 1.0 / (2.0 * dimension_ * coord_matrix_ptr_->cols()) * hessian_sum;
         }
         default:
-            throw std::invalid_argument("SVGDCpp: [Argument error] Invalid scale method Enum provided.");
+            throw std::invalid_argument(SVGDCPP_LOG_PREFIX + "[Argument error] Invalid scale method Enum provided.");
         }
     }
 

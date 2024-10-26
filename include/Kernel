@@ -8,8 +8,8 @@
  * @endcode
  */
 
-#ifndef SVGD_CPP_KERNEL_MODULE_HPP
-#define SVGD_CPP_KERNEL_MODULE_HPP
+#ifndef SVGDCPP_KERNEL_MODULE_HPP
+#define SVGDCPP_KERNEL_MODULE_HPP
 
 #include "SVGDCpp/Kernel/Kernel.hpp"
 #include "SVGDCpp/Kernel/GaussianRBFKernel.hpp"

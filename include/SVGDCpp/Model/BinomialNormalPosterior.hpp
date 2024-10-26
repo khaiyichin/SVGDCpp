@@ -1,5 +1,5 @@
-#ifndef SVGD_CPP_BINOMIAL_NORMAL_POSTERIOR_HPP
-#define SVGD_CPP_BINOMIAL_NORMAL_POSTERIOR_HPP
+#ifndef SVGDCPP_BINOMIAL_NORMAL_POSTERIOR_HPP
+#define SVGDCPP_BINOMIAL_NORMAL_POSTERIOR_HPP
 
 #include "../Core.hpp"
 #include "Model.hpp"
@@ -20,11 +20,11 @@ public:
         // Check whether parameters are reasonable
         if (n > t)
         {
-            throw std::invalid_argument("SVGDCpp: [Argument Error] Parameter n should be at most equal to parameter t.");
+            throw std::invalid_argument(SVGDCPP_LOG_PREFIX + "[Argument Error] Parameter n should be at most equal to parameter t.");
         }
         else if (n < 0 || t <= 0)
         {
-            throw std::invalid_argument("SVGDCpp: [Argument Error] Parameter n should be > 0 and/or parameter t should be non-negative.");
+            throw std::invalid_argument(SVGDCPP_LOG_PREFIX + "[Argument Error] Parameter n should be > 0 and/or parameter t should be non-negative.");
         }
 
         model_parameters_[0] = (Eigen::Matrix<int, 1, 1>() << n).finished();

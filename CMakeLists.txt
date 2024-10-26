@@ -57,6 +57,9 @@ endif()
 
 # Build library
 find_package(Eigen3 CONFIG REQUIRED)
+find_package(OpenMP)
+
+find_library(CPPAD_LIB cppad_lib REQUIRED)
 
 add_library(${PROJECT_NAME}
     INTERFACE
@@ -66,11 +69,20 @@ target_include_directories(${PROJECT_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/>
 )
-target_link_libraries(${PROJECT_NAME}
-    INTERFACE
-    cppad_lib
-    Eigen3::Eigen
-)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT_NAME}
+        INTERFACE
+        ${CPPAD_LIB}
+        Eigen3::Eigen
+        OpenMP::OpenMP_CXX
+    )
+else()
+    target_link_libraries(${PROJECT_NAME}
+        INTERFACE
+        ${CPPAD_LIB}
+        Eigen3::Eigen
+    )
+endif()
 
 # Install library header files
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
