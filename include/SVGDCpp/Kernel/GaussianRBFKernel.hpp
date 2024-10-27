@@ -75,7 +75,7 @@ public:
 
         // Setup kernel function
         auto kernel_fun =
-            [this](const VectorXADd &x, const std::vector<MatrixXADd> &params, const VectorXADd &location) -> VectorXADd
+            [](const VectorXADd &x, const std::vector<MatrixXADd> &params, const VectorXADd &location) -> VectorXADd
         {
             VectorXADd result(1), diff = x - location;
             result << (-diff.transpose() * params[0] * diff).array().exp();

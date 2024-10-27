@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(SVGDCPP_CMAKE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/cmake")
 set(SVGDCPP_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}") # assign include destination to variable
 set(API_DOCUMENTATION_DIR ${CMAKE_INSTALL_PREFIX}/doc/${PROJECT_NAME})
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif()
@@ -47,7 +48,6 @@ if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_CONFIGURATION_TYPES MATCHES Debug)
     # Build tests
     enable_testing()
     add_subdirectory(tests)
-
 endif()
 
 # Check to build examples
@@ -55,12 +55,13 @@ if(BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
-# Build library
+# Find dependencies
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(OpenMP)
 
 find_library(CPPAD_LIB cppad_lib REQUIRED)
 
+# Build library
 add_library(${PROJECT_NAME}
     INTERFACE
 )
@@ -69,6 +70,7 @@ target_include_directories(${PROJECT_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/>
 )
+
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME}
         INTERFACE

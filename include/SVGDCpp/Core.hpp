@@ -20,6 +20,7 @@
 #include <numeric>
 #include <cmath>
 #include <utility>
+#include <iostream>
 
 #include "Exceptions.hpp"
 

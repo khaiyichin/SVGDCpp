@@ -50,7 +50,7 @@ std::shared_ptr<Model> model_ptr = std::make_shared<MultivariateNormal>(mean, co
 std::shared_ptr<Kernel> kernel_ptr = std::make_shared<GaussianRBFKernel>(x0, GaussianRBFKernel::ScaleMethod::Median, model_ptr);
 
 // Create Adam optimizer pointer
-std::shared_ptr<Optimizer>opt_ptr = std::make_shared<Adam>(dim, num_particles, 1.0e-1, 0.9, 0.999);
+std::shared_ptr<Optimizer> opt_ptr = std::make_shared<Adam>(dim, num_particles, 1.0e-1, 0.9, 0.999);
 
 // Instantiate the SVGD class
 SVGD svgd(dim, num_iterations, x0, kernel_ptr, model_ptr, opt_ptr);
