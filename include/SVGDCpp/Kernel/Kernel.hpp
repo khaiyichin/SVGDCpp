@@ -307,14 +307,8 @@ public:
     {
         std::vector<MatrixXADd> converted_params(params.size());
 
-        // Verify that the parameters all have # rows == dimension_
         for (size_t i = 0; i < params.size(); ++i)
         {
-            if (params[i].rows() != dimension_)
-            {
-                throw DimensionMismatchException("Dimension mismatch between provided parameters and model dimension (" + std::to_string(params[i].rows()) + " vs. " + std::to_string(dimension_) + ").");
-            }
-
             // Convert into CppAD::AD<double> type
             converted_params[i] = ConvertToCppAD(params[i]);
         }
@@ -329,6 +323,11 @@ public:
      */
     virtual void UpdateLocation(const Eigen::VectorXd &x)
     {
+        if (x.rows() != dimension_)
+            {
+                throw DimensionMismatchException("Dimension mismatch between provided location and kernel dimension (" + std::to_string(x.rows()) + " vs. " + std::to_string(dimension_) + ").");
+            }
+
         location_vec_ad_ = ConvertToCppAD(x);
     }
 

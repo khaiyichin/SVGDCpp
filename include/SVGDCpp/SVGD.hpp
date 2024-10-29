@@ -174,6 +174,14 @@ public:
             throw DimensionMismatchException("Specified dimension does not match the particle coordinate matrix.");
         }
 
+        // Initialize matrices
+        coord_matrix_ptr_ = coord_mat_ptr; // coordinate matrix of n particles in a m-dimensional problem is m x n
+
+        log_model_grad_matrix_.resize(dimension_, coord_matrix_ptr_->cols());                                             // m x n
+        kernel_matrix_.resize(coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());                                      // n x n
+        kernel_grad_matrix_.resize(dimension_ * coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());                    // (m*n) x n
+        kernel_grad_indexer_ = Eigen::MatrixXd::Identity(dimension_, dimension_).replicate(1, coord_matrix_ptr_->cols()); // m x (m*n)
+
         // Assign bounds
         if (bound_lower.rows() == 1 &&
             bound_lower == Eigen::VectorXd::Constant(1, -INFINITY) &&
@@ -190,11 +198,11 @@ public:
             }
             else
             {
-                std::cout << SVGDCPP_LOG_PREFIX + "Bound checking enabled; lower bound set to " << bound_lower.transpose() << "." << std::endl;
+                std::cout << SVGDCPP_LOG_PREFIX + "Bound checking enabled, lower bound set to " << bound_lower.transpose() << "." << std::endl;
                 check_bounds_ = true;
             }
 
-            bounds_.first = bound_lower;
+            bounds_.first = bound_lower.replicate(1, coord_matrix_ptr_->cols());
 
             if (bound_upper.rows() != dimension_ && bound_upper.rows() != 1)
             {
@@ -202,19 +210,12 @@ public:
             }
             else
             {
-                std::cout << SVGDCPP_LOG_PREFIX + "Bound checking enabled; upper bound set to " << bound_upper.transpose() << "." << std::endl;
+                std::cout << SVGDCPP_LOG_PREFIX + "Bound checking enabled, upper bound set to " << bound_upper.transpose() << "." << std::endl;
                 check_bounds_ = true;
             }
 
-            bounds_.second = bound_upper;
+            bounds_.second = bound_upper.replicate(1, coord_matrix_ptr_->cols());
         }
-
-        coord_matrix_ptr_ = coord_mat_ptr; // coordinate matrix of n particles in a m-dimensional problem is m x n
-
-        log_model_grad_matrix_.resize(dimension_, coord_matrix_ptr_->cols());                                             // m x n
-        kernel_matrix_.resize(coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());                                      // n x n
-        kernel_grad_matrix_.resize(dimension_ * coord_matrix_ptr_->cols(), coord_matrix_ptr_->cols());                    // (m*n) x n
-        kernel_grad_indexer_ = Eigen::MatrixXd::Identity(dimension_, dimension_).replicate(1, coord_matrix_ptr_->cols()); // m x (m*n)
 
         // Store the kernel, distribution, and optimizer objects
         kernel_ptr_ = kernel_ptr;
@@ -396,11 +397,7 @@ protected:
         // Check bounds
         if (check_bounds_)
         {
-            for (int i = 0; i < coord_matrix_ptr_->rows(); ++i)
-            {
-                coord_matrix_ptr_->row(i) = (coord_matrix_ptr_->row(i).array() < bounds_.first(i)).select(bounds_.first(i), coord_matrix_ptr_->row(i));
-                coord_matrix_ptr_->row(i) = (coord_matrix_ptr_->row(i).array() > bounds_.second(i)).select(bounds_.second(i), coord_matrix_ptr_->row(i));
-            }
+            *coord_matrix_ptr_ = (coord_matrix_ptr_->array().min(bounds_.second.array()).max(bounds_.first.array())).matrix();
         }
     }
 
@@ -498,7 +495,7 @@ protected:
 
     std::shared_ptr<Eigen::MatrixXd> coord_matrix_ptr_; ///< Pointer to the particle coordinate matrix; shape is @a m (@ref dimension_) x @a n (number of particles).
 
-    std::pair<Eigen::VectorXd, Eigen::VectorXd> bounds_; ///< Pair of bounds (lower, upper) to the problem.
+    std::pair<Eigen::MatrixXd, Eigen::MatrixXd> bounds_; ///< Pair of bounds (lower, upper) to the problem.
 
     Eigen::MatrixXd log_model_grad_matrix_; ///< Matrix containing the gradients of the log model function; shape is @a m x @a n.
 

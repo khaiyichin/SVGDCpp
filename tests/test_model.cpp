@@ -1,3 +1,5 @@
+#include <functional>
+
 #include "doctest.h"
 #include "Core"
 
