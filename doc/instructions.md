@@ -95,7 +95,6 @@ svgd.Run();
 At the moment, this library provides the following classes:
 1. Models:
     - `MultivariateNormal`
-    - `BinomialLikelihood`
 2. Kernels:
     - `GaussianRBF`
 3. Optimizers:
@@ -125,7 +124,7 @@ In a nutshell, you create function objects as desired that are used to update ei
 >Corresponding independent variables vector was written to binary a file.
 >```
 
->ℹ️: `VectorXADd` and `MatrixXADd` are aliases for `Eigen::VectorXd<CppAD::AD<double>>` and `Eigen::MatrixXd<CppAD::AD<double>>` respectively. The `CppAD::AD<double>` type is a `double` type that is used by the CppAD library to perform automatic differentiation. To convert between the `double` and `CppAD::AD<double>` types you can use `ConvertToCppAD` and `ConvertFromCppAD`.
+>ℹ️ `VectorXADd` and `MatrixXADd` are aliases for `Eigen::VectorXd<CppAD::AD<double>>` and `Eigen::MatrixXd<CppAD::AD<double>>` respectively. The `CppAD::AD<double>` type is a `double` type that is used by the CppAD library to perform automatic differentiation. To convert between the `double` and `CppAD::AD<double>` types you can use `ConvertToCppAD` and `ConvertFromCppAD`.
 
 #### Method 1: use the Kernel or Model base class directly
 This is the simplest method and is useful if you don't need specific variables/functionalities in your `Model` and/or `Kernel` classes.
