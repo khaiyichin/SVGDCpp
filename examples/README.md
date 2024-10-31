@@ -13,4 +13,4 @@ Final particle coordinates
 ```
 or through the provided Jupyter notebooks. The notebooks should already contain rendered figures, but you can re-run them as long as you set up a Python kernel (can be done using the provided `requirements.txt` file and a virtual environment).
 
-_Note: if the figures don't render on GitHub, you can use [nbviewer](nbviewer.org) to view the notebooks._
+_Note: if the figures don't render on GitHub, you can use [nbviewer](https://nbviewer.org) to view the notebooks._

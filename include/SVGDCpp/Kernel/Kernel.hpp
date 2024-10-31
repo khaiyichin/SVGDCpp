@@ -233,7 +233,7 @@ public:
         location_vec_ad_ = obj.location_vec_ad_;
         kernel_parameters_ = obj.kernel_parameters_;
         kernel_fun_ = obj.kernel_fun_;
-        kernel_fun_ad_ = CppAD::ADFun<double>(); // not copying over ADFun object to prevent complications when using in multi-threaded mode
+        kernel_fun_ad_ = CppAD::ADFun<double>(); // not copying over ADFun object to prevent complications when using in multithreaded mode
 
         return *this;
     }

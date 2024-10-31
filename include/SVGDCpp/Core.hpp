@@ -95,7 +95,7 @@ inline void SetupForParallelMode()
         return static_cast<size_t>(omp_get_thread_num());
     };
 
-    // Setup for multi-threading environment with CppAD
+    // Setup for multithreading environment with CppAD
     CppAD::thread_alloc::parallel_setup(omp_get_max_threads(), in_parallel, thread_number);
     CppAD::thread_alloc::hold_memory(true); // it should be faster, even when num_thread is equal to one,
                                             // for thread_alloc to hold onto memory.

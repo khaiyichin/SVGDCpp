@@ -115,7 +115,7 @@ public:
      * @param kernel_ptr Pointer to a @ref Kernel (or its derived class) object.
      * @param model_ptr Pointer to a @ref Model (or its derived class) object.
      * @param optimizer_ptr Pointer to an @ref Optimizer (or its derived class) object.
-     * @param parallel Flag to run SVGD in multi-threaded mode.
+     * @param parallel Flag to run SVGD in multithreaded mode.
      */
     SVGD(
         const size_t &dim,
@@ -146,7 +146,7 @@ public:
      * @param optimizer_ptr Pointer to an @ref Optimizer (or its derived class) object.
      * @param bound_lower Lower bound for the problem.
      * @param bound_upper Upper bound for the problem.
-     * @param parallel Flag to run SVGD in multi-threaded mode.
+     * @param parallel Flag to run SVGD in multithreaded mode.
      * @param log_intermediate_matrices Flag to log intermediate computation results.
      * @param intermediate_matrices_output_path File to write intermediate computation results to.
      */
