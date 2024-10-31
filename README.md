@@ -32,4 +32,15 @@ This library provides the [Stein Variational Gradient Descent](https://arxiv.org
     ```
 
 ## Getting Started
-See the [examples directory](examples/) for tutorials on how to use them and see [here](doc/instuctions.md) for detailed instructions.
+See the [examples directory](examples/) for tutorials on how to use them and see [here](doc/instructions.md) for detailed instructions.
+
+## Tests
+Unit tests have been provided to aid source code development. Besides identifying the kinds of testing imposed on the source code, looking into the test files can help you understand how the algorithm works. All you need to do is build the code with `-D CMAKE_BUILD_TYPE=Debug` and then run the tests either using `CTest`:
+```
+# in the build/ directory
+$ make test
+```
+or run them individually (the tests are written with the [`doctest`](https://github.com/doctest/doctest) framework):
+```
+$ tests/test_model -s
+```
