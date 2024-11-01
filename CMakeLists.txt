@@ -5,6 +5,9 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# Define current version
+set(SVGDCPP_VERSION "1.0.0")
+
 # Define variables
 set(SVGDCPP_CMAKE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/cmake")
 set(SVGDCPP_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}") # assign include destination to variable

@@ -1,11 +1,9 @@
 /**
  * @file Kernel.hpp
  * @author Khai Yi Chin (khaiyichin@gmail.com)
- * @brief Kernel class header
- * @version 0.1
- * @date 2024-03-23
+ * @brief Kernel class header.
  *
- * @copyright Copyright (c) 2024
+ * @copyright Copyright (c) 2024 Khai Yi Chin
  *
  */
 #ifndef SVGDCPP_KERNEL_HPP
@@ -350,7 +348,7 @@ public:
     }
 
     /**
-     * @brief Execute methods required for each step.
+     * @brief Execute methods required at each step.
      * @details Override this method to include methods that you need to have run every step of the iteration
      * @a e.g., computing the scale parameter of the kernel function.
      *

@@ -1,11 +1,9 @@
 /**
  * @file SVGD.hpp
  * @author Khai Yi Chin (khaiyichin@gmail.com)
- * @brief SVGD class header
- * @version 0.1
- * @date 2024-03-22
+ * @brief SVGD class header.
  *
- * @copyright Copyright (c) 2024
+ * @copyright Copyright (c) 2024 Khai Yi Chin
  *
  */
 
@@ -244,7 +242,7 @@ public:
             // Parallel application inspired from https://github.com/coin-or/CppAD/issues/197#issuecomment-1983462984
 
             // Create copies of the original kernel for n particles
-            for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
             {
                 kernel_ptr_vector_.push_back(kernel_ptr_->CloneUniquePointer());
             }
@@ -380,7 +378,7 @@ protected:
         if (parallel_)
         {
 #pragma omp parallel for
-            for (size_t i = 0; i < coord_matrix_ptr_->cols(); ++i)
+            for (int i = 0; i < coord_matrix_ptr_->cols(); ++i)
             {
                 kernel_ptr_vector_[i]->Step();
             }

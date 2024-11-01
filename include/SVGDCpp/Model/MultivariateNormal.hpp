@@ -2,10 +2,8 @@
  * @file MultivariateNormal.hpp
  * @author Khai Yi Chin (khaiyichin@gmail.com)
  * @brief Multivariate normal model class header.
- * @version 0.1
- * @date 2024-03-22
  *
- * @copyright Copyright (c) 2024
+ * @copyright Copyright (c) 2024 Khai Yi Chin
  *
  */
 

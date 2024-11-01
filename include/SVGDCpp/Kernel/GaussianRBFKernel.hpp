@@ -2,10 +2,8 @@
  * @file GaussianRBFKernel.hpp
  * @author Khai Yi Chin (khaiyichin@gmail.com)
  * @brief Gaussian RBF kernel class header.
- * @version 0.1
- * @date 2024-03-23
  *
- * @copyright Copyright (c) 2024
+ * @copyright Copyright (c) 2024 Khai Yi Chin
  *
  */
 

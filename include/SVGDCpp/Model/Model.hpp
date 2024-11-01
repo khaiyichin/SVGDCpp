@@ -2,10 +2,8 @@
  * @file Model.hpp
  * @author Khai Yi Chin (khaiyichin@gmail.com)
  * @brief Model class header
- * @version 0.1
- * @date 2024-03-22
  *
- * @copyright Copyright (c) 2024
+ * @copyright Copyright (c) 2024 Khai Yi Chin
  *
  */
 
@@ -408,7 +406,7 @@ public:
     }
 
     /**
-     * @brief Execute methods required for each step.
+     * @brief Execute methods required at each step.
      * @details Override this method to include methods that you need to have run every step of the iteration.
      *
      */

@@ -10,7 +10,8 @@ This library provides the [Stein Variational Gradient Descent](https://arxiv.org
     - `-D include_eigen=true`
     - `-D CMAKE_BUILD_TYPE=Release`
 - [OpenMP v4.5+ (201511)](https://www.openmp.org/) - _should be shipped with your compiler_
-- [Doxygen](https://www.doxygen.nl/) - _required only if documentation is desired_
+- [GraphViz](https://graphviz.org/) - _required only if documentation is desired; can be installed using `apt install graphviz`_
+- [Doxygen](https://www.doxygen.nl/) - _required only if documentation is desired; can be installed using `apt install doxygen`_
 
 ## Installation
 1. Clone this repository and enter it.
@@ -32,7 +33,7 @@ This library provides the [Stein Variational Gradient Descent](https://arxiv.org
     ```
 
 ## Getting Started
-See the [examples directory](examples/) for tutorials on how to use them and see [here](doc/instructions.md) for detailed instructions.
+See the [examples directory](./examples/) for tutorials on how to use them and see [here](./doc/instructions.md) for detailed instructions.
 
 ## Tests
 Unit tests have been provided to aid source code development. Besides identifying the kinds of testing imposed on the source code, looking into the test files can help you understand how the algorithm works. All you need to do is build the code with `-D CMAKE_BUILD_TYPE=Debug` and then run the tests either using `CTest`:

@@ -2,10 +2,8 @@
  * @file Core.hpp
  * @author Khai Yi Chin (khaiyichin@gmail.com)
  * @brief Core header to provide common types and functions.
- * @version 0.1
- * @date 2024-03-23
  *
- * @copyright Copyright (c) 2024
+ * @copyright Copyright (c) 2024 Khai Yi Chin
  *
  */
 

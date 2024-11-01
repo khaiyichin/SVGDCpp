@@ -2,10 +2,8 @@
  * @file Exceptions.hpp
  * @author Khai Yi Chin (khaiyichin@gmail.com)
  * @brief Exceptions header to provide some commonly used custom exceptions.
- * @version 0.1
- * @date 2024-10-16
  * 
- * @copyright Copyright (c) 2024
+ * @copyright Copyright (c) 2024 Khai Yi Chin
  * 
  */
 
@@ -15,8 +13,13 @@
 #include <exception>
 #include <string>
 
-#define SVGDCPP_LOG_PREFIX std::string("SVGDCpp: ")
+#define SVGDCPP_LOG_PREFIX std::string("SVGDCpp: ") ///< Convenience macro to prefix output logs.
 
+/**
+ * @class DimensionMismatchException
+ * @brief Exception for dimension mismatch type errors.
+ * @ingroup Core_Module
+ */
 class DimensionMismatchException : public std::exception
 {
 public:
@@ -32,6 +35,11 @@ private:
     std::string message_;
 };
 
+/**
+ * @class UnsetException
+ * @brief Exception for unset value type errors.
+ * @ingroup Core_Module
+ */
 class UnsetException : public std::exception
 {
 public:

@@ -30,7 +30,7 @@ Mainly, there are 5 elements required to run a minimally working SVGD algorithm:
 3. `Optimizer` object;
 4. `SVGD` object.
 
-The first four are required by the fifth as shared pointer arguments.
+The first four are required by the fifth as shared pointer arguments. The `Model` and `Kernel` classes are used to compute $\hat{\phi}^*$ in Equation (8) of the [SVGD paper](https://arxiv.org/abs/1608.04471), and the step size $\epsilon$ is provided with the `Optimizer` class.
 
 ### Basic usage
 This example uses the provided classes `MultivariateNormal`, `GaussianRBF`, and `Adam` optimizer to estimate a multivariate normal distribution.
